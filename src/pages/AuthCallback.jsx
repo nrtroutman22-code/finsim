@@ -9,72 +9,77 @@ export default function AuthCallback() {
   useEffect(() => {
     async function handleCallback() {
       console.log('[AuthCallback] URL:', window.location.href)
-      console.log('[AuthCallback] search:', window.location.search)
-      console.log('[AuthCallback] hash:', window.location.hash ? `present (${window.location.hash.length} chars)` : 'empty')
 
-      const code = new URLSearchParams(window.location.search).get('code')
+      let session = null
+
+      // --- Implicit flow: tokens in hash fragment ---
       const hashParams = new URLSearchParams(window.location.hash.substring(1))
       const accessToken = hashParams.get('access_token')
+      const refreshToken = hashParams.get('refresh_token')
 
-      console.log('[AuthCallback] PKCE code:', code ? 'found' : 'none')
-      console.log('[AuthCallback] hash access_token:', accessToken ? 'found' : 'none')
-
-      // PKCE flow: exchange the code for a session
-      if (code) {
-        console.log('[AuthCallback] Exchanging PKCE code...')
-        setStatus('Exchanging code...')
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+      if (accessToken && refreshToken) {
+        console.log('[AuthCallback] Implicit flow — setting session from hash tokens')
+        setStatus('Processing tokens...')
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        })
         if (error) {
-          console.error('[AuthCallback] Code exchange failed:', error.message)
+          console.error('[AuthCallback] setSession failed:', error.message)
           setStatus(`Error: ${error.message}`)
           setTimeout(() => navigate('/', { replace: true }), 2000)
           return
         }
-        console.log('[AuthCallback] Code exchange succeeded:', !!data.session)
+        session = data.session
+        console.log('[AuthCallback] setSession succeeded:', !!session)
       }
 
-      // Implicit flow: hash fragment is auto-processed by the client,
-      // but it's async — we need to wait for it
-      if (!code && accessToken) {
-        console.log('[AuthCallback] Implicit flow — waiting for client to process hash...')
-        setStatus('Processing tokens...')
-      }
-
-      // Poll for session — handles the async gap in both flows
-      let session = null
-      for (let attempt = 1; attempt <= 15; attempt++) {
-        const { data, error } = await supabase.auth.getSession()
-        console.log(`[AuthCallback] getSession attempt ${attempt}:`, data.session ? 'found' : 'null', error?.message || '')
-        if (data.session) {
+      // --- PKCE flow: code in query string ---
+      if (!session) {
+        const code = new URLSearchParams(window.location.search).get('code')
+        if (code) {
+          console.log('[AuthCallback] PKCE flow — exchanging code')
+          setStatus('Exchanging code...')
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+          if (error) {
+            console.error('[AuthCallback] Code exchange failed:', error.message)
+            setStatus(`Error: ${error.message}`)
+            setTimeout(() => navigate('/', { replace: true }), 2000)
+            return
+          }
           session = data.session
-          break
+          console.log('[AuthCallback] Code exchange succeeded:', !!session)
         }
-        await new Promise(resolve => setTimeout(resolve, 300))
+      }
+
+      // --- Fallback: check if client already has a session ---
+      if (!session) {
+        console.log('[AuthCallback] No tokens found, checking existing session...')
+        const { data } = await supabase.auth.getSession()
+        session = data.session
       }
 
       if (!session) {
-        console.error('[AuthCallback] No session after all attempts')
+        console.error('[AuthCallback] No session established')
         setStatus('Could not sign in. Redirecting...')
         setTimeout(() => navigate('/', { replace: true }), 1500)
         return
       }
 
-      console.log('[AuthCallback] Session user:', session.user.id, session.user.email)
+      console.log('[AuthCallback] Signed in as:', session.user.email)
       setStatus('Signed in! Redirecting...')
 
-      // Sync pending role from localStorage (set before OAuth redirect)
+      // Sync pending role
       const pendingRole = localStorage.getItem('finsim_pending_role')
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', session.user.id)
         .single()
 
-      console.log('[AuthCallback] Profile:', profile, 'Error:', profileError?.message)
-      console.log('[AuthCallback] Pending role:', pendingRole)
+      console.log('[AuthCallback] Profile role:', profile?.role, '| Pending role:', pendingRole)
 
       if (pendingRole && profile && profile.role !== pendingRole) {
-        console.log('[AuthCallback] Updating role to:', pendingRole)
         await supabase
           .from('profiles')
           .update({ role: pendingRole })
