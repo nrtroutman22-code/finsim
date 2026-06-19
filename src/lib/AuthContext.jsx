@@ -9,44 +9,28 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session) loadProfile(session.user.id)
-      else setLoading(false)
-    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session)
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      if (session) loadProfile(session.user.id)
-      else {
-        setProfile(null)
+        if (session) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+
+          setProfile(data)
+        } else {
+          setProfile(null)
+        }
+
         setLoading(false)
       }
-    })
+    )
 
     return () => subscription.unsubscribe()
   }, [])
-
-  async function loadProfile(userId) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
-    const pendingRole = localStorage.getItem('finsim_pending_role')
-    if (pendingRole && data && data.role !== pendingRole) {
-      await supabase
-        .from('profiles')
-        .update({ role: pendingRole })
-        .eq('id', userId)
-      data.role = pendingRole
-    }
-    localStorage.removeItem('finsim_pending_role')
-
-    setProfile(data)
-    setLoading(false)
-  }
 
   async function signOut() {
     await supabase.auth.signOut()

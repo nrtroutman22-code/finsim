@@ -7,6 +7,7 @@ import JoinClass from './pages/JoinClass'
 import Dashboard from './pages/Dashboard'
 import TeacherDashboard from './pages/TeacherDashboard'
 import CreateCharacter from './pages/CreateCharacter'
+import AuthCallback from './pages/AuthCallback'
 import './index.css'
 
 createRoot(document.getElementById('root')).render(
@@ -15,6 +16,7 @@ createRoot(document.getElementById('root')).render(
       <AuthProvider>
         <Routes>
           <Route path="/" element={<Login />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/join" element={<JoinClass />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/teacher" element={<TeacherDashboard />} />
