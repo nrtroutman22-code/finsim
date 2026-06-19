@@ -4,7 +4,7 @@ import { useAuth } from '../lib/AuthContext'
 import { Navigate } from 'react-router-dom'
 
 export default function Login() {
-  const { session, profile, loading } = useAuth()
+  const { session, profile, studentStatus, loading } = useAuth()
   const [mode, setMode] = useState('signin')
   const [role, setRole] = useState('student')
   const [email, setEmail] = useState('')
@@ -24,7 +24,9 @@ export default function Login() {
 
   if (session && profile) {
     if (profile.role === 'teacher') return <Navigate to="/teacher" />
-    return <Navigate to="/dashboard" />
+    if (studentStatus === 'needs-enrollment') return <Navigate to="/join" />
+    if (studentStatus === 'needs-character') return <Navigate to="/create-character" />
+    if (studentStatus === 'ready') return <Navigate to="/dashboard" />
   }
 
   async function handleOAuth(provider) {

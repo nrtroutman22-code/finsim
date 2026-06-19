@@ -88,7 +88,30 @@ export default function AuthCallback() {
       }
       localStorage.removeItem('finsim_pending_role')
 
-      const destination = profile?.role === 'teacher' ? '/teacher' : '/dashboard'
+      let destination = '/join'
+      if (profile?.role === 'teacher') {
+        destination = '/teacher'
+      } else {
+        const { data: enrollment } = await supabase
+          .from('enrollments')
+          .select('id, status')
+          .eq('student_id', session.user.id)
+          .in('status', ['approved', 'pending'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (enrollment?.status === 'approved') {
+          const { data: character } = await supabase
+            .from('characters')
+            .select('id')
+            .eq('enrollment_id', enrollment.id)
+            .limit(1)
+            .single()
+          destination = character ? '/dashboard' : '/create-character'
+        }
+      }
+
       console.log('[AuthCallback] Navigating to:', destination)
       navigate(destination, { replace: true })
     }
