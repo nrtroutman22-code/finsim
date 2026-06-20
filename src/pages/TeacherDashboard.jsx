@@ -2,28 +2,36 @@ import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
+import { triggerTeacherLifeEvent } from '../lib/simulationEngine'
 
 export default function TeacherDashboard() {
   const { session, profile, loading: authLoading, signOut } = useAuth()
   const [sections, setSections] = useState([])
+  const [allEvents, setAllEvents] = useState([])
+  const [recentTriggers, setRecentTriggers] = useState([])
+  const [selectedEvent, setSelectedEvent] = useState('')
+  const [selectedSection, setSelectedSection] = useState('')
+  const [triggerWeek, setTriggerWeek] = useState('')
+  const [pushing, setPushing] = useState(false)
+  const [pushMsg, setPushMsg] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     if (!session) return
-    loadSections()
+    loadAll()
   }, [session])
 
-  async function loadSections() {
+  async function loadAll() {
     try {
-      const { data, error: sErr } = await supabase
+      const { data: secs, error: sErr } = await supabase
         .from('sections')
         .select('id, name, class_code, unlocked_week, is_active, created_at')
         .order('created_at', { ascending: false })
       if (sErr) throw new Error(sErr.message)
 
       const withCounts = await Promise.all(
-        (data || []).map(async (sec) => {
+        (secs || []).map(async (sec) => {
           const { count } = await supabase
             .from('enrollments')
             .select('id', { count: 'exact', head: true })
@@ -33,11 +41,31 @@ export default function TeacherDashboard() {
         })
       )
       setSections(withCounts)
+
+      const { data: events } = await supabase
+        .from('life_events')
+        .select('id, title, is_positive, category')
+        .order('title')
+      setAllEvents(events || [])
+
+      await loadRecentTriggers(withCounts)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
+  }
+
+  async function loadRecentTriggers(secs) {
+    const sectionIds = (secs || sections).map(s => s.id)
+    if (sectionIds.length === 0) return
+    const { data } = await supabase
+      .from('section_life_events')
+      .select('id, section_id, life_event_id, week, triggered_at, life_events(title)')
+      .in('section_id', sectionIds)
+      .order('triggered_at', { ascending: false })
+      .limit(10)
+    setRecentTriggers(data || [])
   }
 
   async function updateWeek(sectionId, newWeek) {
@@ -51,7 +79,31 @@ export default function TeacherDashboard() {
       .eq('id', sectionId)
     if (error) {
       setError(error.message)
-      loadSections()
+      loadAll()
+    }
+  }
+
+  async function handlePushEvent() {
+    if (!selectedEvent || !selectedSection || !triggerWeek) return
+    setPushing(true)
+    setPushMsg(null)
+    try {
+      const sectionIds = selectedSection === 'all'
+        ? sections.map(s => s.id)
+        : [selectedSection]
+
+      for (const secId of sectionIds) {
+        await triggerTeacherLifeEvent(secId, selectedEvent, Number(triggerWeek))
+      }
+      const eventName = allEvents.find(e => e.id === selectedEvent)?.title || 'Event'
+      setPushMsg(`"${eventName}" pushed to ${sectionIds.length === 1 ? '1 section' : sectionIds.length + ' sections'} for week ${triggerWeek}`)
+      await loadRecentTriggers()
+      setSelectedEvent('')
+      setTriggerWeek('')
+    } catch (err) {
+      setPushMsg('Error: ' + err.message)
+    } finally {
+      setPushing(false)
     }
   }
 
@@ -84,6 +136,7 @@ export default function TeacherDashboard() {
         <div className="error-msg" style={{ marginBottom: '1rem' }}>{error}</div>
       )}
 
+      {/* ── Sections ── */}
       {sections.length === 0 ? (
         <section className="dash-section" style={{ textAlign: 'center', padding: '2rem' }}>
           <p style={{ color: 'var(--gray-400)' }}>No sections yet. Create one in the Supabase dashboard to get started.</p>
@@ -144,6 +197,95 @@ export default function TeacherDashboard() {
           </section>
         ))
       )}
+
+      {/* ── Trigger Life Event ── */}
+      <section className="dash-section" style={{ marginTop: '1rem' }}>
+        <h2 className="dash-section-title">⚡ Trigger Life Event</h2>
+
+        <div className="event-trigger-form">
+          <div className="event-trigger-row">
+            <label className="event-trigger-label">Event</label>
+            <select
+              className="input"
+              value={selectedEvent}
+              onChange={e => setSelectedEvent(e.target.value)}
+            >
+              <option value="">Select a life event...</option>
+              {allEvents.map(evt => (
+                <option key={evt.id} value={evt.id}>
+                  {evt.is_positive ? '🟢' : '🔴'} {evt.title} ({evt.category})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="event-trigger-row">
+            <label className="event-trigger-label">Section</label>
+            <select
+              className="input"
+              value={selectedSection}
+              onChange={e => setSelectedSection(e.target.value)}
+            >
+              <option value="">Select a section...</option>
+              <option value="all">All sections</option>
+              {sections.map(sec => (
+                <option key={sec.id} value={sec.id}>{sec.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="event-trigger-row">
+            <label className="event-trigger-label">Week #</label>
+            <input
+              className="input"
+              type="number"
+              min="1"
+              max="36"
+              placeholder="Week number"
+              value={triggerWeek}
+              onChange={e => setTriggerWeek(e.target.value)}
+              style={{ maxWidth: 120 }}
+            />
+          </div>
+
+          <button
+            className="btn btn-primary"
+            style={{ width: 'auto', padding: '0.6rem 1.5rem', alignSelf: 'flex-start' }}
+            onClick={handlePushEvent}
+            disabled={pushing || !selectedEvent || !selectedSection || !triggerWeek}
+            type="button"
+          >
+            {pushing ? 'Pushing...' : 'Push to Students'}
+          </button>
+        </div>
+
+        {pushMsg && (
+          <div className={pushMsg.startsWith('Error') ? 'error-msg' : 'success-msg'} style={{ marginTop: '0.75rem' }}>
+            {pushMsg}
+          </div>
+        )}
+
+        {recentTriggers.length > 0 && (
+          <div style={{ marginTop: '1rem' }}>
+            <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.5rem' }}>
+              Recent triggers
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              {recentTriggers.map(t => {
+                const secName = sections.find(s => s.id === t.section_id)?.name || 'Unknown'
+                return (
+                  <div key={t.id} style={{ fontSize: '0.85rem', color: 'var(--gray-500)', display: 'flex', justifyContent: 'space-between' }}>
+                    <span><strong>{t.life_events?.title}</strong> → {secName} (Week {t.week})</span>
+                    <span style={{ color: 'var(--gray-400)' }}>
+                      {new Date(t.triggered_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   )
 }

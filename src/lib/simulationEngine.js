@@ -244,6 +244,102 @@ export async function processLifeEvent(characterId, lifeEventOptionId, week) {
   return updated
 }
 
+// ─── triggerRandomLifeEvent ─────────────────────────────
+
+export async function triggerRandomLifeEvent(characterId, sectionId) {
+  const { data: character } = await supabase
+    .from('characters')
+    .select('current_week')
+    .eq('id', characterId)
+    .single()
+  if (!character) return null
+
+  const nextWeek = character.current_week + 1
+
+  // Already have an event for this section+week?
+  const { data: existing } = await supabase
+    .from('section_life_events')
+    .select('id')
+    .eq('section_id', sectionId)
+    .eq('week', nextWeek)
+    .limit(1)
+    .single()
+  if (existing) return null
+
+  // Check if student had a life event in the last 3 weeks
+  const minWeek = Math.max(1, nextWeek - 3)
+  const { data: recentEvents } = await supabase
+    .from('student_decisions')
+    .select('id')
+    .eq('character_id', characterId)
+    .eq('decision_type', 'life_event')
+    .gte('week', minWeek)
+    .limit(1)
+  if (recentEvents && recentEvents.length > 0) return null
+
+  // 70% chance to trigger
+  if (Math.random() > 0.7) return null
+
+  // Get events this character has already seen
+  const { data: seenDecisions } = await supabase
+    .from('student_decisions')
+    .select('life_event_option_id')
+    .eq('character_id', characterId)
+    .eq('decision_type', 'life_event')
+  const seenOptionIds = (seenDecisions || []).map(d => d.life_event_option_id).filter(Boolean)
+
+  let seenEventIds = []
+  if (seenOptionIds.length > 0) {
+    const { data: seenOpts } = await supabase
+      .from('life_event_options')
+      .select('life_event_id')
+      .in('id', seenOptionIds)
+    seenEventIds = [...new Set((seenOpts || []).map(o => o.life_event_id))]
+  }
+
+  // Pick a random unseen event
+  let query = supabase.from('life_events').select('id')
+  if (seenEventIds.length > 0) {
+    // Filter out seen events by fetching all and filtering client-side
+    // (Supabase JS doesn't support .not().in() well on uuid arrays)
+  }
+  const { data: allEvents } = await supabase.from('life_events').select('id')
+  const candidates = (allEvents || []).filter(e => !seenEventIds.includes(e.id))
+
+  if (candidates.length === 0) return null
+
+  const picked = candidates[Math.floor(Math.random() * candidates.length)]
+
+  // Insert into section_life_events
+  const { error: insertErr } = await supabase
+    .from('section_life_events')
+    .insert({
+      section_id: sectionId,
+      life_event_id: picked.id,
+      week: nextWeek,
+    })
+  // Ignore duplicate key errors (another student in the section may have triggered first)
+  if (insertErr && !insertErr.message.includes('duplicate')) {
+    console.error('Could not trigger life event:', insertErr.message)
+    return null
+  }
+
+  return picked.id
+}
+
+// ─── triggerTeacherLifeEvent ────────────────────────────
+
+export async function triggerTeacherLifeEvent(sectionId, lifeEventId, week) {
+  const { error } = await supabase
+    .from('section_life_events')
+    .insert({
+      section_id: sectionId,
+      life_event_id: lifeEventId,
+      week,
+    })
+  if (error) throw new Error('Could not trigger life event: ' + error.message)
+}
+
 // ─── applyImpact (shared helper) ────────────────────────
 
 async function applyImpact(characterId, impact) {

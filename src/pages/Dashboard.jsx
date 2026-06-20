@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
-import { advanceWeek, processDecision, processLifeEvent } from '../lib/simulationEngine'
+import { advanceWeek, processDecision, processLifeEvent, triggerRandomLifeEvent } from '../lib/simulationEngine'
 
 function money(n) {
   const num = Number(n) || 0
@@ -258,6 +258,7 @@ export default function Dashboard() {
   const [lifeEvent, setLifeEvent] = useState(null)
   const [lifeEventOptions, setLifeEventOptions] = useState([])
   const [lifeEventMade, setLifeEventMade] = useState(false)
+  const [lifeEventResult, setLifeEventResult] = useState(null)
   const [choosing, setChoosing] = useState(false)
 
   // Advance week state
@@ -355,6 +356,9 @@ export default function Dashboard() {
         setDecisionMade(true)
       }
 
+      // ── Try to trigger a random life event ──
+      await triggerRandomLifeEvent(char.id, enrollment.section_id)
+
       // ── Load active life event for this section + next week ──
       const { data: sectionEvent } = await supabase
         .from('section_life_events')
@@ -424,10 +428,13 @@ export default function Dashboard() {
   async function handleLifeEvent(optionId) {
     setChoosing(true)
     try {
+      const opt = lifeEventOptions.find(o => o.id === optionId)
       const updated = await processLifeEvent(character.id, optionId, character.current_week + 1)
       if (updated) setLatest(updated)
       setLifeEventMade(true)
+      setLifeEventResult(opt?.label || 'Done')
       setLifeEvent(null)
+      setTimeout(() => setLifeEventResult(null), 3000)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -504,13 +511,22 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* ── Decision Cards ── */}
-      {weekData && !decisionMade && (
-        <DecisionCard week={weekData} options={weekOptions} onChoose={handleDecision} choosing={choosing} />
-      )}
-
+      {/* ── Life Event (shown first, must be resolved before decision) ── */}
       {lifeEvent && !lifeEventMade && (
         <LifeEventCard event={lifeEvent} options={lifeEventOptions} onChoose={handleLifeEvent} choosing={choosing} />
+      )}
+
+      {lifeEventResult && (
+        <div className="dash-section" style={{ borderLeft: '4px solid var(--green)', marginBottom: '1rem' }}>
+          <p style={{ fontSize: '0.9rem' }}>
+            <strong>Life event resolved:</strong> {lifeEventResult}
+          </p>
+        </div>
+      )}
+
+      {/* ── Weekly Decision (only visible after life event is resolved) ── */}
+      {weekData && !decisionMade && lifeEventMade && (
+        <DecisionCard week={weekData} options={weekOptions} onChoose={handleDecision} choosing={choosing} />
       )}
 
       {/* ── Advance Week ── */}
