@@ -612,6 +612,40 @@ body {
   color: var(--gray-500);
 }
 
+/* ── Week Control (Teacher) ──────────────────────────── */
+
+.week-control {
+  background: var(--gray-50);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.week-control-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.week-control-bar {
+  height: 8px;
+  background: var(--gray-200);
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+}
+
+.week-control-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.week-control-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 /* ── Badges ──────────────────────────────────────────── */
 
 .badge-grid {

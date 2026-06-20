@@ -247,6 +247,7 @@ export default function Dashboard() {
   const [previous, setPrevious] = useState(null)
   const [history, setHistory] = useState([])
   const [unlockedCategories, setUnlockedCategories] = useState([])
+  const [unlockedWeek, setUnlockedWeek] = useState(0)
   const [allBadges, setAllBadges] = useState([])
   const [earnedBadgeIds, setEarnedBadgeIds] = useState({})
 
@@ -281,10 +282,11 @@ export default function Dashboard() {
 
       const { data: section } = await supabase
         .from('sections')
-        .select('unlocked_categories')
+        .select('unlocked_categories, unlocked_week')
         .eq('id', enrollment.section_id)
         .single()
       setUnlockedCategories(section?.unlocked_categories || [])
+      setUnlockedWeek(section?.unlocked_week ?? 0)
 
       const { data: char, error: cErr } = await supabase
         .from('characters')
@@ -479,7 +481,8 @@ export default function Dashboard() {
   const savingsRate = Math.max(0, ((income - expenses) / income) * 100)
   const nwDelta = delta(latest.net_worth, previous?.net_worth)
 
-  const canAdvance = decisionMade && lifeEventMade && character.current_week < 36
+  const weekLocked = character.current_week >= unlockedWeek
+  const canAdvance = decisionMade && lifeEventMade && character.current_week < 36 && !weekLocked
   const pendingActions = (!decisionMade && weekData) || (!lifeEventMade && lifeEvent)
 
   return (
@@ -517,13 +520,20 @@ export default function Dashboard() {
             <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>
               {character.current_week >= 36
                 ? 'Simulation complete!'
-                : advancing
-                  ? 'Advancing to next week...'
-                  : pendingActions
-                    ? 'Complete your decisions to advance'
-                    : 'Ready to advance'}
+                : weekLocked
+                  ? '🔒 Waiting for teacher'
+                  : advancing
+                    ? 'Advancing to next week...'
+                    : pendingActions
+                      ? 'Complete your decisions to advance'
+                      : 'Ready to advance'}
             </p>
-            {pendingActions && (
+            {weekLocked && character.current_week < 36 && (
+              <p style={{ fontSize: '0.8rem', color: 'var(--gray-400)', marginTop: '0.15rem' }}>
+                Your teacher hasn't unlocked the next week yet. Check back soon!
+              </p>
+            )}
+            {!weekLocked && pendingActions && (
               <p style={{ fontSize: '0.8rem', color: 'var(--gray-400)', marginTop: '0.15rem' }}>
                 Make all decisions above before moving on.
               </p>
@@ -536,7 +546,7 @@ export default function Dashboard() {
             disabled={!canAdvance || advancing}
             type="button"
           >
-            {advancing ? 'Processing...' : character.current_week >= 36 ? 'Finished' : 'Advance to Next Week'}
+            {advancing ? 'Processing...' : character.current_week >= 36 ? 'Finished' : weekLocked ? 'Locked' : 'Advance to Next Week'}
           </button>
         </div>
         {advanceResult && (
