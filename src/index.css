@@ -577,6 +577,41 @@ body {
   opacity: 0.5;
 }
 
+/* ── Decision / Life Event Cards ─────────────────────── */
+
+.decision-card {
+  border-left: 4px solid var(--blue);
+  margin-bottom: 1rem;
+}
+
+.decision-card.event-positive {
+  border-left-color: var(--green);
+}
+
+.decision-card.event-negative {
+  border-left-color: #f59e0b;
+}
+
+.decision-options {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* ── Advance Week ────────────────────────────────────── */
+
+.advance-section {
+  border: 2px dashed var(--gray-200);
+  margin-bottom: 1.5rem;
+}
+
+.advance-summary {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gray-100);
+  font-size: 0.85rem;
+  color: var(--gray-500);
+}
+
 /* ── Badges ──────────────────────────────────────────── */
 
 .badge-grid {

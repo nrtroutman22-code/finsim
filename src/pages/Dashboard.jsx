@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
+import { advanceWeek, processDecision, processLifeEvent } from '../lib/simulationEngine'
 
 function money(n) {
   const num = Number(n) || 0
@@ -180,79 +181,270 @@ function CreditScoreDisplay({ score }) {
   )
 }
 
+// ─── Decision Card ──────────────────────────────────────
+
+function DecisionCard({ week, options, onChoose, choosing }) {
+  return (
+    <section className="dash-section decision-card">
+      <h2 className="dash-section-title">📋 This Week's Decision</h2>
+      <p style={{ fontSize: '0.9rem', color: 'var(--gray-700)', marginBottom: '0.25rem', fontWeight: 600 }}>{week.title}</p>
+      <p style={{ fontSize: '0.85rem', color: 'var(--gray-500)', marginBottom: '0.75rem', lineHeight: 1.5 }}>{week.description}</p>
+      <div className="decision-options">
+        {options.map(opt => (
+          <button
+            key={opt.id}
+            className="option-card"
+            onClick={() => onChoose(opt.id)}
+            disabled={choosing}
+            type="button"
+          >
+            <div style={{ fontWeight: 600 }}>{opt.label}</div>
+            {opt.description && (
+              <div style={{ fontSize: '0.85rem', color: 'var(--gray-500)', marginTop: '0.15rem' }}>{opt.description}</div>
+            )}
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// ─── Life Event Card ────────────────────────────────────
+
+function LifeEventCard({ event, options, onChoose, choosing }) {
+  return (
+    <section className={`dash-section decision-card ${event.is_positive ? 'event-positive' : 'event-negative'}`}>
+      <h2 className="dash-section-title">{event.is_positive ? '🎉' : '⚠️'} Life Event</h2>
+      <p style={{ fontSize: '0.9rem', color: 'var(--gray-700)', marginBottom: '0.25rem', fontWeight: 600 }}>{event.title}</p>
+      <p style={{ fontSize: '0.85rem', color: 'var(--gray-500)', marginBottom: '0.75rem', lineHeight: 1.5 }}>{event.description}</p>
+      <div className="decision-options">
+        {options.map(opt => (
+          <button
+            key={opt.id}
+            className="option-card"
+            onClick={() => onChoose(opt.id)}
+            disabled={choosing}
+            type="button"
+          >
+            <div style={{ fontWeight: 600 }}>{opt.label}</div>
+            {opt.description && (
+              <div style={{ fontSize: '0.85rem', color: 'var(--gray-500)', marginTop: '0.15rem' }}>{opt.description}</div>
+            )}
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 // ─── Main Dashboard ─────────────────────────────────────
 
 export default function Dashboard() {
   const { session, loading: authLoading, signOut } = useAuth()
   const [character, setCharacter] = useState(null)
+  const [sectionId, setSectionId] = useState(null)
   const [latest, setLatest] = useState(null)
   const [previous, setPrevious] = useState(null)
   const [history, setHistory] = useState([])
   const [unlockedCategories, setUnlockedCategories] = useState([])
   const [allBadges, setAllBadges] = useState([])
   const [earnedBadgeIds, setEarnedBadgeIds] = useState({})
+
+  // Decision state
+  const [weekData, setWeekData] = useState(null)
+  const [weekOptions, setWeekOptions] = useState([])
+  const [decisionMade, setDecisionMade] = useState(false)
+  const [lifeEvent, setLifeEvent] = useState(null)
+  const [lifeEventOptions, setLifeEventOptions] = useState([])
+  const [lifeEventMade, setLifeEventMade] = useState(false)
+  const [choosing, setChoosing] = useState(false)
+
+  // Advance week state
+  const [advancing, setAdvancing] = useState(false)
+  const [advanceResult, setAdvanceResult] = useState(null)
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
+  const loadDashboard = useCallback(async () => {
     if (!session) return
+    try {
+      const { data: enrollment, error: eErr } = await supabase
+        .from('enrollments')
+        .select('id, section_id')
+        .eq('student_id', session.user.id)
+        .eq('status', 'approved')
+        .limit(1)
+        .single()
+      if (eErr) throw new Error('No approved enrollment found.')
+      setSectionId(enrollment.section_id)
 
-    async function load() {
-      try {
-        const { data: enrollment, error: eErr } = await supabase
-          .from('enrollments')
-          .select('id, section_id')
-          .eq('student_id', session.user.id)
-          .eq('status', 'approved')
+      const { data: section } = await supabase
+        .from('sections')
+        .select('unlocked_categories')
+        .eq('id', enrollment.section_id)
+        .single()
+      setUnlockedCategories(section?.unlocked_categories || [])
+
+      const { data: char, error: cErr } = await supabase
+        .from('characters')
+        .select('*, life_paths(name), locations(name)')
+        .eq('enrollment_id', enrollment.id)
+        .single()
+      if (cErr) throw new Error('Character not found.')
+      setCharacter(char)
+
+      const { data: states, error: sErr } = await supabase
+        .from('financial_states')
+        .select('*')
+        .eq('character_id', char.id)
+        .order('week', { ascending: true })
+      if (sErr) throw new Error('Could not load financial data.')
+      setHistory(states)
+
+      if (states.length > 0) {
+        setLatest(states[states.length - 1])
+        if (states.length > 1) setPrevious(states[states.length - 2])
+      }
+
+      const [{ data: badges }, { data: earned }] = await Promise.all([
+        supabase.from('badges').select('*').order('sort_order'),
+        supabase.from('character_badges').select('badge_id, earned_at').eq('character_id', char.id),
+      ])
+      setAllBadges(badges || [])
+      const map = {}
+      ;(earned || []).forEach(e => { map[e.badge_id] = e.earned_at })
+      setEarnedBadgeIds(map)
+
+      // ── Load current week's curriculum decision ──
+      const currentWeek = char.current_week
+      const { data: weekRow } = await supabase
+        .from('weeks')
+        .select('*')
+        .eq('week_number', currentWeek)
+        .single()
+
+      if (weekRow) {
+        const { data: existingDecision } = await supabase
+          .from('student_decisions')
+          .select('id')
+          .eq('character_id', char.id)
+          .eq('week', currentWeek)
+          .eq('decision_type', 'curriculum')
           .limit(1)
           .single()
-        if (eErr) throw new Error('No approved enrollment found.')
 
-        const { data: section } = await supabase
-          .from('sections')
-          .select('unlocked_categories')
-          .eq('id', enrollment.section_id)
-          .single()
-        setUnlockedCategories(section?.unlocked_categories || [])
-
-        const { data: char, error: cErr } = await supabase
-          .from('characters')
-          .select('*, life_paths(name), locations(name)')
-          .eq('enrollment_id', enrollment.id)
-          .single()
-        if (cErr) throw new Error('Character not found.')
-        setCharacter(char)
-
-        const { data: states, error: sErr } = await supabase
-          .from('financial_states')
-          .select('*')
-          .eq('character_id', char.id)
-          .order('week', { ascending: true })
-        if (sErr) throw new Error('Could not load financial data.')
-        setHistory(states)
-
-        if (states.length > 0) {
-          setLatest(states[states.length - 1])
-          if (states.length > 1) setPrevious(states[states.length - 2])
+        if (existingDecision) {
+          setDecisionMade(true)
+          setWeekData(null)
+        } else {
+          setWeekData(weekRow)
+          setDecisionMade(false)
+          const { data: opts } = await supabase
+            .from('decision_options')
+            .select('*')
+            .eq('week_id', weekRow.id)
+            .order('sort_order')
+          setWeekOptions(opts || [])
         }
-
-        const [{ data: badges }, { data: earned }] = await Promise.all([
-          supabase.from('badges').select('*').order('sort_order'),
-          supabase.from('character_badges').select('badge_id, earned_at').eq('character_id', char.id),
-        ])
-        setAllBadges(badges || [])
-        const map = {}
-        ;(earned || []).forEach(e => { map[e.badge_id] = e.earned_at })
-        setEarnedBadgeIds(map)
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
+      } else {
+        setWeekData(null)
+        setDecisionMade(true)
       }
-    }
 
-    load()
+      // ── Load active life event for this section + week ──
+      const { data: sectionEvent } = await supabase
+        .from('section_life_events')
+        .select('life_event_id')
+        .eq('section_id', enrollment.section_id)
+        .eq('week', currentWeek)
+        .limit(1)
+        .single()
+
+      if (sectionEvent) {
+        const { data: existingEventDecision } = await supabase
+          .from('student_decisions')
+          .select('id')
+          .eq('character_id', char.id)
+          .eq('week', currentWeek)
+          .eq('decision_type', 'life_event')
+          .limit(1)
+          .single()
+
+        if (existingEventDecision) {
+          setLifeEventMade(true)
+          setLifeEvent(null)
+        } else {
+          const { data: evt } = await supabase
+            .from('life_events')
+            .select('*')
+            .eq('id', sectionEvent.life_event_id)
+            .single()
+          setLifeEvent(evt)
+          setLifeEventMade(false)
+          const { data: eopts } = await supabase
+            .from('life_event_options')
+            .select('*')
+            .eq('life_event_id', sectionEvent.life_event_id)
+            .order('sort_order')
+          setLifeEventOptions(eopts || [])
+        }
+      } else {
+        setLifeEvent(null)
+        setLifeEventMade(true)
+      }
+
+      setAdvanceResult(null)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }, [session])
+
+  useEffect(() => { loadDashboard() }, [loadDashboard])
+
+  async function handleDecision(optionId) {
+    setChoosing(true)
+    try {
+      const updated = await processDecision(character.id, optionId, character.current_week)
+      if (updated) setLatest(updated)
+      setDecisionMade(true)
+      setWeekData(null)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setChoosing(false)
+    }
+  }
+
+  async function handleLifeEvent(optionId) {
+    setChoosing(true)
+    try {
+      const updated = await processLifeEvent(character.id, optionId, character.current_week)
+      if (updated) setLatest(updated)
+      setLifeEventMade(true)
+      setLifeEvent(null)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setChoosing(false)
+    }
+  }
+
+  async function handleAdvanceWeek() {
+    setAdvancing(true)
+    setAdvanceResult(null)
+    try {
+      const newState = await advanceWeek(character.id)
+      setAdvanceResult(newState)
+      await loadDashboard()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setAdvancing(false)
+    }
+  }
 
   if (authLoading || loading) {
     return (
@@ -270,7 +462,7 @@ export default function Dashboard() {
         <div className="card" style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚠️</div>
           <p className="error-msg">{error}</p>
-          <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => window.location.reload()}>
+          <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => { setError(null); setLoading(true); loadDashboard() }}>
             Try Again
           </button>
         </div>
@@ -284,8 +476,10 @@ export default function Dashboard() {
   const income = Number(latest.monthly_income) || 1
   const expenses = Number(latest.monthly_expenses) || 0
   const savingsRate = Math.max(0, ((income - expenses) / income) * 100)
-
   const nwDelta = delta(latest.net_worth, previous?.net_worth)
+
+  const canAdvance = decisionMade && lifeEventMade && character.current_week < 36
+  const pendingActions = (!decisionMade && weekData) || (!lifeEventMade && lifeEvent)
 
   return (
     <div className="dash">
@@ -305,6 +499,54 @@ export default function Dashboard() {
           <button className="btn btn-secondary dash-signout" onClick={signOut} type="button">Sign out</button>
         </div>
       </header>
+
+      {/* ── Decision Cards ── */}
+      {weekData && !decisionMade && (
+        <DecisionCard week={weekData} options={weekOptions} onChoose={handleDecision} choosing={choosing} />
+      )}
+
+      {lifeEvent && !lifeEventMade && (
+        <LifeEventCard event={lifeEvent} options={lifeEventOptions} onChoose={handleLifeEvent} choosing={choosing} />
+      )}
+
+      {/* ── Advance Week ── */}
+      <section className="dash-section advance-section">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+          <div>
+            <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+              {character.current_week >= 36
+                ? 'Simulation complete!'
+                : advancing
+                  ? 'Advancing to next week...'
+                  : pendingActions
+                    ? 'Complete your decisions to advance'
+                    : 'Ready to advance'}
+            </p>
+            {pendingActions && (
+              <p style={{ fontSize: '0.8rem', color: 'var(--gray-400)', marginTop: '0.15rem' }}>
+                Make all decisions above before moving on.
+              </p>
+            )}
+          </div>
+          <button
+            className="btn btn-primary"
+            style={{ width: 'auto', padding: '0.6rem 1.5rem' }}
+            onClick={handleAdvanceWeek}
+            disabled={!canAdvance || advancing}
+            type="button"
+          >
+            {advancing ? 'Processing...' : character.current_week >= 36 ? 'Finished' : 'Advance to Next Week'}
+          </button>
+        </div>
+        {advanceResult && (
+          <div className="advance-summary">
+            <span>Week {advanceResult.week} results: </span>
+            <span style={{ fontWeight: 600, color: Number(advanceResult.net_worth) >= Number(previous?.net_worth || 0) ? '#16a34a' : '#dc2626' }}>
+              Net worth {money(advanceResult.net_worth)}
+            </span>
+          </div>
+        )}
+      </section>
 
       {/* ── Stat Cards ── */}
       <div className="dash-stats">
@@ -355,7 +597,6 @@ export default function Dashboard() {
 
       {/* ── Grades + Credit side by side ── */}
       <div className="dash-bottom-grid">
-        {/* Financial Health Grades */}
         <section className="dash-section">
           <h2 className="dash-section-title">Financial Health</h2>
           <div className="grades-list">
@@ -382,7 +623,6 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Credit Score */}
         <section className="dash-section">
           <h2 className="dash-section-title">Credit Score</h2>
           <CreditScoreDisplay score={latest.credit_score} />
