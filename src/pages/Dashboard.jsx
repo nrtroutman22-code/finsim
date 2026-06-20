@@ -189,6 +189,8 @@ export default function Dashboard() {
   const [previous, setPrevious] = useState(null)
   const [history, setHistory] = useState([])
   const [unlockedCategories, setUnlockedCategories] = useState([])
+  const [allBadges, setAllBadges] = useState([])
+  const [earnedBadgeIds, setEarnedBadgeIds] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -233,6 +235,15 @@ export default function Dashboard() {
           setLatest(states[states.length - 1])
           if (states.length > 1) setPrevious(states[states.length - 2])
         }
+
+        const [{ data: badges }, { data: earned }] = await Promise.all([
+          supabase.from('badges').select('*').order('sort_order'),
+          supabase.from('character_badges').select('badge_id, earned_at').eq('character_id', char.id),
+        ])
+        setAllBadges(badges || [])
+        const map = {}
+        ;(earned || []).forEach(e => { map[e.badge_id] = e.earned_at })
+        setEarnedBadgeIds(map)
       } catch (err) {
         setError(err.message)
       } finally {
@@ -377,6 +388,43 @@ export default function Dashboard() {
           <CreditScoreDisplay score={latest.credit_score} />
         </section>
       </div>
+
+      {/* ── Badges ── */}
+      {allBadges.length > 0 && (
+        <section className="dash-section" style={{ marginTop: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem' }}>
+            <h2 className="dash-section-title" style={{ marginBottom: 0 }}>🏆 Achievements</h2>
+            <span style={{ fontSize: '0.8rem', color: 'var(--gray-400)', fontWeight: 600 }}>
+              {Object.keys(earnedBadgeIds).length} of {allBadges.length} earned
+            </span>
+          </div>
+          <div className="badge-grid">
+            {[...allBadges]
+              .sort((a, b) => (earnedBadgeIds[b.id] ? 1 : 0) - (earnedBadgeIds[a.id] ? 1 : 0) || a.sort_order - b.sort_order)
+              .map(badge => {
+                const earned = earnedBadgeIds[badge.id]
+                return (
+                  <div key={badge.id} className={`badge-card ${earned ? 'earned' : 'locked'}`}>
+                    <div className="badge-emoji-wrap">
+                      <span className="badge-emoji">{badge.emoji}</span>
+                      {earned && <span className="badge-check">✅</span>}
+                      {!earned && <span className="badge-lock">🔒</span>}
+                    </div>
+                    <p className="badge-name">{badge.name}</p>
+                    <p className="badge-desc">
+                      {earned ? badge.description : badge.condition_description}
+                    </p>
+                    {earned && (
+                      <p className="badge-date">
+                        {new Date(earned).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+          </div>
+        </section>
+      )}
     </div>
   )
 }
