@@ -316,12 +316,13 @@ export default function Dashboard() {
       ;(earned || []).forEach(e => { map[e.badge_id] = e.earned_at })
       setEarnedBadgeIds(map)
 
-      // ── Load current week's curriculum decision ──
-      const currentWeek = char.current_week
+      // ── Load next week's curriculum decision ──
+      // Week 0 is the starting state; decisions begin at week 1
+      const nextWeek = char.current_week + 1
       const { data: weekRow } = await supabase
         .from('weeks')
         .select('*')
-        .eq('week_number', currentWeek)
+        .eq('week_number', nextWeek)
         .single()
 
       if (weekRow) {
@@ -329,7 +330,7 @@ export default function Dashboard() {
           .from('student_decisions')
           .select('id')
           .eq('character_id', char.id)
-          .eq('week', currentWeek)
+          .eq('week', nextWeek)
           .eq('decision_type', 'curriculum')
           .limit(1)
           .single()
@@ -352,12 +353,12 @@ export default function Dashboard() {
         setDecisionMade(true)
       }
 
-      // ── Load active life event for this section + week ──
+      // ── Load active life event for this section + next week ──
       const { data: sectionEvent } = await supabase
         .from('section_life_events')
         .select('life_event_id')
         .eq('section_id', enrollment.section_id)
-        .eq('week', currentWeek)
+        .eq('week', nextWeek)
         .limit(1)
         .single()
 
@@ -366,7 +367,7 @@ export default function Dashboard() {
           .from('student_decisions')
           .select('id')
           .eq('character_id', char.id)
-          .eq('week', currentWeek)
+          .eq('week', nextWeek)
           .eq('decision_type', 'life_event')
           .limit(1)
           .single()
@@ -407,7 +408,7 @@ export default function Dashboard() {
   async function handleDecision(optionId) {
     setChoosing(true)
     try {
-      const updated = await processDecision(character.id, optionId, character.current_week)
+      const updated = await processDecision(character.id, optionId, character.current_week + 1)
       if (updated) setLatest(updated)
       setDecisionMade(true)
       setWeekData(null)
@@ -421,7 +422,7 @@ export default function Dashboard() {
   async function handleLifeEvent(optionId) {
     setChoosing(true)
     try {
-      const updated = await processLifeEvent(character.id, optionId, character.current_week)
+      const updated = await processLifeEvent(character.id, optionId, character.current_week + 1)
       if (updated) setLatest(updated)
       setLifeEventMade(true)
       setLifeEvent(null)
