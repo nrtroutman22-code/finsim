@@ -52,6 +52,18 @@ function statusBadge(student) {
   return { label: 'On track', color: '#16a34a', bg: '#f0fdf4' }
 }
 
+function timeAgo(dateStr) {
+  if (!dateStr) return ''
+  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000)
+  if (seconds < 60) return 'just now'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
 // ─── Overview ───────────────────────────────────────────
 
 function OverviewPage({ students, onSelectStudent }) {
@@ -114,7 +126,7 @@ function OverviewPage({ students, onSelectStudent }) {
 
 // ─── Roster ─────────────────────────────────────────────
 
-function RosterPage({ students, sections, currentSectionId, onReload }) {
+function RosterPage({ students, sections, currentSectionId, onReload, pendingEnrollments, onApprove, onDeny, onApproveAll }) {
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState('active')
   const [moveModal, setMoveModal] = useState(null)
@@ -124,6 +136,7 @@ function RosterPage({ students, sections, currentSectionId, onReload }) {
   const [deactReason, setDeactReason] = useState('Medical leave')
   const [processing, setProcessing] = useState(false)
 
+  const pending = pendingEnrollments || []
   const active = students.filter(s => s.enrollStatus === 'approved')
   const deactivated = students.filter(s => s.enrollStatus === 'denied')
   const list = (tab === 'active' ? active : deactivated).filter(
@@ -161,6 +174,37 @@ function RosterPage({ students, sections, currentSectionId, onReload }) {
 
   return (
     <div>
+      {pending.length > 0 && (
+        <div className="td-pending-section">
+          <div className="td-pending-header">
+            <h3>Pending Approvals ({pending.length})</h3>
+            {pending.length > 1 && (
+              <button className="btn btn-primary" style={{ width: 'auto', padding: '0.35rem 0.85rem', fontSize: '0.85rem' }} onClick={onApproveAll}>Approve All</button>
+            )}
+          </div>
+          <div className="td-table-wrap">
+            <table className="td-table">
+              <thead><tr><th>Student</th><th>Section</th><th>Requested</th><th>Actions</th></tr></thead>
+              <tbody>
+                {pending.map(e => (
+                  <tr key={e.id}>
+                    <td style={{ fontWeight: 600 }}>{e.displayName}</td>
+                    <td style={{ fontSize: '0.85rem', color: 'var(--gray-500)' }}>{e.sectionName}</td>
+                    <td style={{ fontSize: '0.85rem', color: 'var(--gray-500)' }}>{timeAgo(e.created_at)}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        <button className="td-action-btn td-action-approve" onClick={() => onApprove(e.id)}>Approve</button>
+                        <button className="td-action-btn td-action-danger" onClick={() => onDeny(e.id)}>Deny</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
         <div className="role-toggle" style={{ width: 'auto' }}>
           <button className={tab === 'active' ? 'active' : ''} onClick={() => setTab('active')}>Active ({active.length})</button>
@@ -1181,6 +1225,8 @@ export default function TeacherDashboard() {
   const [recentTriggers, setRecentTriggers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [pendingEnrollments, setPendingEnrollments] = useState([])
+  const [toast, setToast] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const activeSection = sections.find(s => s.id === activeSectionId)
@@ -1315,6 +1361,29 @@ export default function TeacherDashboard() {
     setRecentTriggers(data || [])
   }, [sections])
 
+  const loadPending = useCallback(async () => {
+    const sectionIds = sections.map(s => s.id)
+    if (sectionIds.length === 0) return
+    const { data } = await supabase
+      .from('enrollments')
+      .select('id, student_id, section_id, created_at')
+      .in('section_id', sectionIds)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true })
+    if (!data || data.length === 0) { setPendingEnrollments([]); return }
+    const studentIds = [...new Set(data.map(e => e.student_id))]
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name')
+      .in('id', studentIds)
+    const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]))
+    setPendingEnrollments(data.map(e => ({
+      ...e,
+      displayName: profileMap[e.student_id]?.display_name || 'Student',
+      sectionName: sections.find(s => s.id === e.section_id)?.name || '',
+    })))
+  }, [sections])
+
   useEffect(() => {
     if (!session) return
     async function init() {
@@ -1336,6 +1405,10 @@ export default function TeacherDashboard() {
     if (sections.length > 0) loadTriggers()
   }, [sections, loadTriggers])
 
+  useEffect(() => {
+    if (sections.length > 0) loadPending()
+  }, [sections, loadPending])
+
   async function handleUpdateWeek(sectionId, newWeek) {
     const clamped = Math.max(0, Math.min(36, newWeek))
     setSections(prev => prev.map(s => s.id === sectionId ? { ...s, unlocked_week: clamped } : s))
@@ -1345,6 +1418,36 @@ export default function TeacherDashboard() {
   async function reload() {
     await loadSections()
     if (activeSectionId) await loadStudents(activeSectionId)
+  }
+
+  function showToast(message, type = 'success') {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  async function handleApprove(enrollmentId) {
+    const { error: err } = await supabase.from('enrollments').update({ status: 'approved' }).eq('id', enrollmentId)
+    if (err) { showToast('Failed to approve: ' + err.message, 'error'); return }
+    setPendingEnrollments(prev => prev.filter(e => e.id !== enrollmentId))
+    showToast('Student approved')
+    reload()
+  }
+
+  async function handleDeny(enrollmentId) {
+    const { error: err } = await supabase.from('enrollments').update({ status: 'denied' }).eq('id', enrollmentId)
+    if (err) { showToast('Failed to deny: ' + err.message, 'error'); return }
+    setPendingEnrollments(prev => prev.filter(e => e.id !== enrollmentId))
+    showToast('Student denied')
+  }
+
+  async function handleApproveAll() {
+    const ids = pendingEnrollments.map(e => e.id)
+    const { error: err } = await supabase.from('enrollments').update({ status: 'approved' }).in('id', ids)
+    if (err) { showToast('Failed to approve all: ' + err.message, 'error'); return }
+    const count = ids.length
+    setPendingEnrollments([])
+    showToast(`${count} student${count !== 1 ? 's' : ''} approved`)
+    reload()
   }
 
   if (authLoading || loading) return <div className="page-center"><p style={{ color: 'var(--gray-400)' }}>Loading...</p></div>
@@ -1397,17 +1500,30 @@ export default function TeacherDashboard() {
           </div>
         </header>
 
+        {pendingEnrollments.length > 0 && (
+          <div className="td-pending-banner">
+            <span>⏳ <strong>{pendingEnrollments.length}</strong> student{pendingEnrollments.length !== 1 ? 's' : ''} waiting for approval</span>
+            <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.3rem 0.75rem', fontSize: '0.8rem' }} onClick={() => { setPage('roster'); setSidebarOpen(false) }}>Review now</button>
+          </div>
+        )}
+
         {error && <div className="error-msg" style={{ marginBottom: '1rem' }}>{error}</div>}
 
         <div className="td-content">
           {page === 'overview' && <OverviewPage students={students} onSelectStudent={() => {}} />}
-          {page === 'roster' && <RosterPage students={students} sections={sections} currentSectionId={activeSectionId} onReload={reload} />}
+          {page === 'roster' && <RosterPage students={students} sections={sections} currentSectionId={activeSectionId} onReload={reload} pendingEnrollments={pendingEnrollments} onApprove={handleApprove} onDeny={handleDeny} onApproveAll={handleApproveAll} />}
           {page === 'gradebook' && <GradebookPage students={students} sectionId={activeSectionId} onReload={reload} />}
           {page === 'sim' && <SimControlsPage sections={sections} allEvents={allEvents} recentTriggers={recentTriggers} onUpdateWeek={handleUpdateWeek} onReloadTriggers={loadTriggers} />}
           {page === 'display' && <ClassDisplayPage students={students} onReload={reload} />}
           {page === 'reports' && <ReportsPage students={students} sectionName={activeSection?.name} />}
           {page === 'demo' && <DemoPage />}
         </div>
+
+        {toast && (
+          <div className={`td-toast ${toast.type === 'error' ? 'td-toast-error' : 'td-toast-success'}`}>
+            {toast.message}
+          </div>
+        )}
       </main>
     </div>
   )

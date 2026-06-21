@@ -1262,3 +1262,73 @@ body {
   .td-content { padding: 1rem; }
   .td-stats { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Pending approvals banner */
+.td-pending-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 1.5rem;
+  background: #fef9c3;
+  border-bottom: 1px solid #fde047;
+  font-size: 0.9rem;
+  color: #854d0e;
+  flex-wrap: wrap;
+}
+
+/* Pending approvals section in Roster */
+.td-pending-section {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+.td-pending-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.td-pending-header h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #92400e;
+  margin: 0;
+}
+.td-action-approve {
+  color: #16a34a !important;
+  border-color: #bbf7d0 !important;
+}
+.td-action-approve:hover {
+  background: #f0fdf4 !important;
+}
+
+/* Toast notifications */
+.td-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 2000;
+  animation: td-toast-in 0.25s ease;
+}
+.td-toast-success {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+.td-toast-error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+@keyframes td-toast-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
