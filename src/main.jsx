@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard'
 import TeacherDashboard from './pages/TeacherDashboard'
 import CreateCharacter from './pages/CreateCharacter'
 import AuthCallback from './pages/AuthCallback'
+import ClassDisplay from './pages/ClassDisplay'
 import './index.css'
 
 createRoot(document.getElementById('root')).render(
@@ -22,6 +23,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="/dashboard" element={<ProtectedRoute allow="dashboard"><Dashboard /></ProtectedRoute>} />
           <Route path="/teacher" element={<ProtectedRoute allow="teacher"><TeacherDashboard /></ProtectedRoute>} />
           <Route path="/create-character" element={<ProtectedRoute allow="create-character"><CreateCharacter /></ProtectedRoute>} />
+          <Route path="/display/:characterId" element={<ProtectedRoute allow="teacher"><ClassDisplay /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

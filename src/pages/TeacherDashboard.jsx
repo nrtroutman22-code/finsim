@@ -531,8 +531,14 @@ function SimControlsPage({ sections, allEvents, recentTriggers, onUpdateWeek, on
 function ClassDisplayPage({ students, onReload }) {
   const [shareModal, setShareModal] = useState(null)
 
-  async function toggleShare(st, anonymous) {
+  function displayUrl(studentId, anonymous) {
+    const base = `${window.location.origin}/display/${studentId}`
+    return anonymous ? `${base}?anonymous=true` : base
+  }
+
+  async function handleShare(st, type) {
     await supabase.from('enrollments').update({ dashboard_shared: true }).eq('id', st.enrollmentId)
+    window.open(displayUrl(st.id, type === 'anon'), '_blank')
     setShareModal(null)
     onReload()
   }
@@ -544,7 +550,7 @@ function ClassDisplayPage({ students, onReload }) {
 
   return (
     <div>
-      <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem', marginBottom: '1rem' }}>Share individual student dashboards for class discussion or presentation.</p>
+      <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem', marginBottom: '1rem' }}>Share individual student dashboards for class discussion or presentation. Opens in a new tab for projecting.</p>
       <div className="td-table-wrap">
         <table className="td-table">
           <thead><tr><th>Student</th><th>Status</th><th>Actions</th></tr></thead>
@@ -555,7 +561,11 @@ function ClassDisplayPage({ students, onReload }) {
                 <td>{st.dashboardShared ? <span className="td-status-badge" style={{ color: '#16a34a', background: '#f0fdf4' }}>Sharing</span> : <span style={{ color: 'var(--gray-400)', fontSize: '0.85rem' }}>Not sharing</span>}</td>
                 <td>
                   {st.dashboardShared ? (
-                    <button className="td-action-btn" onClick={() => stopSharing(st)}>Stop Sharing</button>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button className="td-action-btn" onClick={() => window.open(displayUrl(st.id, false), '_blank')}>Open Named</button>
+                      <button className="td-action-btn" onClick={() => window.open(displayUrl(st.id, true), '_blank')}>Open Anon</button>
+                      <button className="td-action-btn td-action-danger" onClick={() => stopSharing(st)}>Stop</button>
+                    </div>
                   ) : (
                     <div style={{ display: 'flex', gap: '0.25rem' }}>
                       <button className="td-action-btn" onClick={() => setShareModal({ student: st, type: 'named' })}>Named</button>
@@ -576,12 +586,12 @@ function ClassDisplayPage({ students, onReload }) {
             <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem', margin: '0.75rem 0' }}>
               {shareModal.type === 'named'
                 ? `"${shareModal.student.name}"'s dashboard will be visible with their name and avatar.`
-                : `"${shareModal.student.name}"'s dashboard will be shown anonymously as "Student".`}
+                : `"${shareModal.student.name}"'s dashboard will be shown anonymously as "Student A".`}
             </p>
-            <p style={{ fontSize: '0.85rem', color: 'var(--gray-400)' }}>Visible data: net worth, credit score, budget breakdown, and financial grades.</p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--gray-400)' }}>Visible data: net worth, credit score, budget breakdown, financial grades, and badges.</p>
             <div className="td-modal-actions">
               <button className="btn btn-secondary" onClick={() => setShareModal(null)}>Cancel</button>
-              <button className="btn btn-primary" onClick={() => toggleShare(shareModal.student, shareModal.type === 'anon')}>Start Sharing</button>
+              <button className="btn btn-primary" onClick={() => handleShare(shareModal.student, shareModal.type)}>Open Display</button>
             </div>
           </div>
         </div>

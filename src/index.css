@@ -1332,3 +1332,69 @@ body {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ─── Class Display Page ─────────────────────────────── */
+.cd-page {
+  min-height: 100vh;
+  background: var(--bg);
+}
+.cd-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1rem;
+  background: #7c3aed;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.cd-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+.cd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.cd-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.cd-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+.cd-subtitle {
+  font-size: 0.9rem;
+  color: var(--gray-500);
+  margin: 0.15rem 0 0;
+}
+.cd-avatar-anon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gray-400);
+}
+.cd-stats .stat-value {
+  font-size: 1.35rem;
+}
+@media (max-width: 600px) {
+  .cd-container { padding: 1rem; }
+  .cd-name { font-size: 1.2rem; }
+  .cd-stats { grid-template-columns: repeat(2, 1fr); }
+}
