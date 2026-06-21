@@ -8,85 +8,66 @@ export default function AuthCallback() {
 
   useEffect(() => {
     async function handleCallback() {
-      console.log('[AuthCallback] URL:', window.location.href)
-
       let session = null
 
-      // --- Implicit flow: tokens in hash fragment ---
       const hashParams = new URLSearchParams(window.location.hash.substring(1))
       const accessToken = hashParams.get('access_token')
       const refreshToken = hashParams.get('refresh_token')
 
       if (accessToken && refreshToken) {
-        console.log('[AuthCallback] Implicit flow — setting session from hash tokens')
         setStatus('Processing tokens...')
         const { data, error } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         })
         if (error) {
-          console.error('[AuthCallback] setSession failed:', error.message)
           setStatus(`Error: ${error.message}`)
           setTimeout(() => navigate('/', { replace: true }), 2000)
           return
         }
         session = data.session
-        console.log('[AuthCallback] setSession succeeded:', !!session)
       }
 
-      // --- PKCE flow: code in query string ---
       if (!session) {
         const code = new URLSearchParams(window.location.search).get('code')
         if (code) {
-          console.log('[AuthCallback] PKCE flow — exchanging code')
           setStatus('Exchanging code...')
           const { data, error } = await supabase.auth.exchangeCodeForSession(code)
           if (error) {
-            console.error('[AuthCallback] Code exchange failed:', error.message)
             setStatus(`Error: ${error.message}`)
             setTimeout(() => navigate('/', { replace: true }), 2000)
             return
           }
           session = data.session
-          console.log('[AuthCallback] Code exchange succeeded:', !!session)
         }
       }
 
-      // --- Fallback: check if client already has a session ---
       if (!session) {
-        console.log('[AuthCallback] No tokens found, checking existing session...')
         const { data } = await supabase.auth.getSession()
         session = data.session
       }
 
       if (!session) {
-        console.error('[AuthCallback] No session established')
         setStatus('Could not sign in. Redirecting...')
         setTimeout(() => navigate('/', { replace: true }), 1500)
         return
       }
 
-      console.log('[AuthCallback] Signed in as:', session.user.email)
       setStatus('Signed in! Redirecting...')
 
-      // Sync pending role
-      const pendingRole = localStorage.getItem('finsim_pending_role')
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', session.user.id)
         .single()
 
-      console.log('[AuthCallback] Profile role:', profile?.role, '| Pending role:', pendingRole)
-
-      if (pendingRole && profile && profile.role !== pendingRole) {
+      if (profile && !profile.role) {
         await supabase
           .from('profiles')
-          .update({ role: pendingRole })
+          .update({ role: 'student' })
           .eq('id', session.user.id)
-        profile.role = pendingRole
+        profile.role = 'student'
       }
-      localStorage.removeItem('finsim_pending_role')
 
       let destination = '/join'
       if (profile?.role === 'teacher') {
@@ -112,7 +93,6 @@ export default function AuthCallback() {
         }
       }
 
-      console.log('[AuthCallback] Navigating to:', destination)
       navigate(destination, { replace: true })
     }
 

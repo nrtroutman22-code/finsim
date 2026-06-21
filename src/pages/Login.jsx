@@ -31,7 +31,6 @@ export default function Login() {
 
   async function handleOAuth(provider) {
     setError(null)
-    localStorage.setItem('finsim_pending_role', role)
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
@@ -82,27 +81,8 @@ export default function Login() {
           <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem' }}>Personal Finance Simulation</p>
         </div>
 
-        <div className="role-toggle">
-          <button
-            className={role === 'student' ? 'active' : ''}
-            onClick={() => setRole('student')}
-            type="button"
-          >
-            🎓 Student
-          </button>
-          <button
-            className={role === 'teacher' ? 'active' : ''}
-            onClick={() => setRole('teacher')}
-            type="button"
-          >
-            📋 Teacher
-          </button>
-        </div>
-
         <p style={{ fontSize: '0.82rem', color: 'var(--gray-500)', textAlign: 'center', lineHeight: 1.5 }}>
-          {role === 'student'
-            ? 'Sign in with your school account to join your class and start the simulation.'
-            : 'Sign in to create classes, manage students, and control the simulation.'}
+          Sign in with your school account to get started.
         </p>
 
         <button className="btn btn-oauth" onClick={() => handleOAuth('google')} type="button" disabled={submitting}>
@@ -129,13 +109,31 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {mode === 'signup' && (
-            <input
-              className="input"
-              type="text"
-              placeholder="Display name"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-            />
+            <>
+              <div className="role-toggle">
+                <button
+                  className={role === 'student' ? 'active' : ''}
+                  onClick={() => setRole('student')}
+                  type="button"
+                >
+                  🎓 Student
+                </button>
+                <button
+                  className={role === 'teacher' ? 'active' : ''}
+                  onClick={() => setRole('teacher')}
+                  type="button"
+                >
+                  📋 Teacher
+                </button>
+              </div>
+              <input
+                className="input"
+                type="text"
+                placeholder="Display name"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+            </>
           )}
           <input
             className="input"
