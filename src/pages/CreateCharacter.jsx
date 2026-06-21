@@ -608,7 +608,7 @@ export default function CreateCharacter() {
             </button>
           ) : (
             <button className="btn btn-primary" onClick={handleLaunch} disabled={saving} type="button">
-              {saving ? 'Saving...' : 'Launch Simulation'}
+              {saving ? (<><span className="spinner" /> Creating character...</>) : 'Launch Simulation'}
             </button>
           )}
         </div>

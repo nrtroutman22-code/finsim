@@ -99,7 +99,13 @@ export default function Login() {
           </button>
         </div>
 
-        <button className="btn btn-oauth" onClick={() => handleOAuth('google')} type="button">
+        <p style={{ fontSize: '0.82rem', color: 'var(--gray-500)', textAlign: 'center', lineHeight: 1.5 }}>
+          {role === 'student'
+            ? 'Sign in with your school account to join your class and start the simulation.'
+            : 'Sign in to create classes, manage students, and control the simulation.'}
+        </p>
+
+        <button className="btn btn-oauth" onClick={() => handleOAuth('google')} type="button" disabled={submitting}>
           <svg width="18" height="18" viewBox="0 0 48 48">
             <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
             <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -109,7 +115,7 @@ export default function Login() {
           Continue with Google
         </button>
 
-        <button className="btn btn-oauth" onClick={() => handleOAuth('azure')} type="button">
+        <button className="btn btn-oauth" onClick={() => handleOAuth('azure')} type="button" disabled={submitting}>
           <svg width="18" height="18" viewBox="0 0 23 23">
             <path fill="#f25022" d="M1 1h10v10H1z"/>
             <path fill="#00a4ef" d="M1 12h10v10H1z"/>
@@ -119,7 +125,7 @@ export default function Login() {
           Continue with Microsoft
         </button>
 
-        <div className="divider">or</div>
+        <div className="divider">or use email</div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {mode === 'signup' && (
@@ -134,7 +140,7 @@ export default function Login() {
           <input
             className="input"
             type="email"
-            placeholder="Email"
+            placeholder="Email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -142,7 +148,7 @@ export default function Login() {
           <input
             className="input"
             type="password"
-            placeholder="Password"
+            placeholder={mode === 'signup' ? 'Password (6+ characters)' : 'Password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -153,7 +159,7 @@ export default function Login() {
           </button>
         </form>
 
-        {error && <div className="error-msg">{error}</div>}
+        {error && <div className="error-msg">{friendlyLoginError(error)}</div>}
         {message && <div className="success-msg">{message}</div>}
 
         <p style={{ textAlign: 'center', fontSize: '0.875rem', color: 'var(--gray-500)' }}>
@@ -176,4 +182,14 @@ export default function Login() {
       </div>
     </div>
   )
+}
+
+function friendlyLoginError(msg) {
+  if (msg.includes('Invalid login credentials')) return 'Incorrect email or password. Please try again.'
+  if (msg.includes('Email not confirmed')) return 'Please check your email and click the confirmation link before signing in.'
+  if (msg.includes('User already registered')) return 'An account with this email already exists. Try signing in instead.'
+  if (msg.includes('Password should be at least')) return 'Password must be at least 6 characters long.'
+  if (msg.includes('Unable to validate email')) return 'Please enter a valid email address.'
+  if (msg.includes('Email rate limit exceeded')) return 'Too many attempts. Please wait a few minutes and try again.'
+  return msg
 }

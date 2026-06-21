@@ -457,8 +457,31 @@ export default function Dashboard() {
 
   if (authLoading || loading) {
     return (
-      <div className="page-center">
-        <p style={{ color: 'var(--gray-400)' }}>Loading your dashboard...</p>
+      <div className="dash">
+        <header className="dash-header">
+          <div className="dash-header-left">
+            <div className="dash-avatar skeleton-pulse" style={{ background: 'var(--gray-200)' }} />
+            <div>
+              <div className="skeleton-pulse" style={{ width: 120, height: 18, borderRadius: 4, background: 'var(--gray-200)', marginBottom: 6 }} />
+              <div className="skeleton-pulse" style={{ width: 80, height: 14, borderRadius: 4, background: 'var(--gray-100)' }} />
+            </div>
+          </div>
+          <div className="dash-header-right">
+            <div className="skeleton-pulse" style={{ width: 90, height: 26, borderRadius: 99, background: 'var(--gray-200)' }} />
+          </div>
+        </header>
+        <div className="dash-stats">
+          {[1,2,3,4,5,6].map(i => (
+            <div key={i} className="stat-card">
+              <div className="skeleton-pulse" style={{ width: 70, height: 12, borderRadius: 4, background: 'var(--gray-200)', marginBottom: 8 }} />
+              <div className="skeleton-pulse" style={{ width: 90, height: 22, borderRadius: 4, background: 'var(--gray-200)' }} />
+            </div>
+          ))}
+        </div>
+        <section className="dash-section">
+          <div className="skeleton-pulse" style={{ width: 160, height: 16, borderRadius: 4, background: 'var(--gray-200)', marginBottom: 12 }} />
+          <div className="skeleton-pulse" style={{ width: '100%', height: 140, borderRadius: 8, background: 'var(--gray-100)' }} />
+        </section>
       </div>
     )
   }
@@ -524,6 +547,13 @@ export default function Dashboard() {
       {/* ── Weekly Decision (only visible after life event is resolved) ── */}
       {weekData && !decisionMade && lifeEventMade && (
         <DecisionCard week={weekData} options={weekOptions} onChoose={handleDecision} choosing={choosing} />
+      )}
+
+      {/* ── Empty state when no decision available ── */}
+      {!weekData && decisionMade && lifeEventMade && character.current_week < 36 && !weekLocked && (
+        <section className="dash-section" style={{ textAlign: 'center', padding: '1.25rem' }}>
+          <p style={{ fontSize: '0.9rem', color: 'var(--gray-400)' }}>No decisions for this week. You're all caught up!</p>
+        </section>
       )}
 
       {/* ── Advance Week ── */}

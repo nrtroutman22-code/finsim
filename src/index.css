@@ -122,6 +122,11 @@ body {
   transition: all 0.15s;
 }
 
+.role-toggle button:hover:not(.active) {
+  color: var(--gray-700);
+  background: var(--gray-50);
+}
+
 .role-toggle button.active {
   background: white;
   color: var(--gray-900);
@@ -171,6 +176,43 @@ body {
 
 .text-link:hover {
   color: var(--green);
+}
+
+/* ── Input error state ─────────────────────────────────── */
+
+.input-error {
+  border-color: #dc2626;
+}
+.input-error:focus {
+  border-color: #dc2626;
+}
+
+/* ── Loading spinner ──────────────────────────────────── */
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Skeleton loading ────────────────────────────────── */
+
+.skeleton-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 /* ── Wizard ───────────────────────────────────────────── */
@@ -1175,6 +1217,18 @@ body {
 /* ── Responsive ──────────────────────────────────────── */
 
 @media (max-width: 600px) {
+  .card {
+    padding: 1.5rem;
+  }
+  .dash-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .dash-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
   .dash-stats {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1186,6 +1240,9 @@ body {
   }
   .badge-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .wizard-card {
+    max-width: 100%;
   }
 }
 

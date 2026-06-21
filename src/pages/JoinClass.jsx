@@ -146,41 +146,45 @@ export default function JoinClass() {
       <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         <div style={{ textAlign: 'center' }}>
           <h1 style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>📋 Join a Class</h1>
-          <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem' }}>
-            Enter the class code your teacher gave you
+          <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+            Ask your teacher for your class code. It looks like <strong style={{ fontFamily: 'monospace', color: 'var(--gray-700)' }}>FIN-XXXX</strong>
           </p>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <input
-            className="input"
+            className={`input ${error ? 'input-error' : ''}`}
             type="text"
             placeholder="FIN-XXXX"
             value={classCode}
-            onChange={(e) => setClassCode(e.target.value)}
+            onChange={(e) => { setClassCode(e.target.value); setError(null) }}
             style={{ textAlign: 'center', fontSize: '1.25rem', letterSpacing: '0.1em', fontWeight: 600 }}
             autoFocus
           />
           <button className="btn btn-primary" type="submit" disabled={submitting || !classCode.trim()}>
-            {submitting ? 'Joining...' : 'Join Class'}
+            {submitting ? (
+              <><span className="spinner" /> Joining...</>
+            ) : 'Join Class'}
           </button>
         </form>
 
         {error && <div className="error-msg">{error}</div>}
 
-        <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--gray-400)' }}>
-          Your teacher will need to approve your request before you can start.
-        </p>
+        <div style={{ textAlign: 'center', fontSize: '0.82rem', color: 'var(--gray-400)', lineHeight: 1.5 }}>
+          <p>Your teacher will need to approve your request before you can start.</p>
+          <p style={{ marginTop: '0.3rem' }}>If you have an invite link, just click it and you'll join automatically.</p>
+        </div>
       </div>
     </div>
   )
 }
 
 function friendlyError(msg) {
-  if (msg.includes('Invalid or inactive class code')) return 'That class code doesn\'t exist or the class is no longer active.'
-  if (msg.includes('Invalid or inactive invite link')) return 'This invite link is invalid or the class is no longer active.'
+  if (msg.includes('Invalid or inactive class code')) return 'That code didn\'t work. Double-check the code with your teacher — it should look like FIN-XXXX.'
+  if (msg.includes('Invalid or inactive invite link')) return 'This invite link is expired or invalid. Ask your teacher for a new one.'
   if (msg.includes('duplicate key') || msg.includes('already exists') || msg.includes('unique constraint'))
-    return 'You\'re already enrolled in this class.'
-  if (msg.includes('Only students can join')) return 'Only student accounts can join a class. Switch to a student account.'
+    return 'You\'re already enrolled in this class. Your teacher may still need to approve you.'
+  if (msg.includes('Only students can join')) return 'Only student accounts can join a class. Sign out and sign back in as a student.'
+  if (msg.includes('network') || msg.includes('fetch')) return 'Connection error. Check your internet and try again.'
   return msg
 }
