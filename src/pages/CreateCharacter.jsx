@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
 
@@ -281,7 +281,6 @@ export default function CreateCharacter() {
   const [error, setError] = useState(null)
 
   if (loading) return <div className="page-center"><p style={{ color: 'var(--gray-400)' }}>Loading...</p></div>
-  if (!session) return <Navigate to="/" />
 
   const emoji = applySkinTone(styleBase, skinTone)
 

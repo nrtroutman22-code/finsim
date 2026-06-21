@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Navigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
 import { triggerTeacherLifeEvent } from '../lib/simulationEngine'
@@ -1349,8 +1348,6 @@ export default function TeacherDashboard() {
   }
 
   if (authLoading || loading) return <div className="page-center"><p style={{ color: 'var(--gray-400)' }}>Loading...</p></div>
-  if (!session) return <Navigate to="/" />
-  if (profile?.role !== 'teacher') return <Navigate to="/dashboard" />
 
   const pageTitle = NAV.find(n => n.id === page)?.label || ''
 

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Navigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
 import { advanceWeek, processDecision, processLifeEvent, triggerRandomLifeEvent } from '../lib/simulationEngine'
@@ -464,8 +463,6 @@ export default function Dashboard() {
     )
   }
 
-  if (!session) return <Navigate to="/" />
-
   if (error) {
     return (
       <div className="page-center">
@@ -480,7 +477,7 @@ export default function Dashboard() {
     )
   }
 
-  if (!character || !latest) return <Navigate to="/create-character" />
+  if (!character || !latest) return null
 
   const grades = calcGrades(latest)
   const income = Number(latest.monthly_income) || 1

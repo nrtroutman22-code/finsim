@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
 
@@ -87,8 +87,6 @@ export default function JoinClass() {
       </div>
     )
   }
-
-  if (!session) return <Navigate to="/" />
 
   async function handleSubmit(e) {
     e.preventDefault()
