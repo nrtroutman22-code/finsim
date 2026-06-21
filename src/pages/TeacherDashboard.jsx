@@ -589,78 +589,585 @@ function ReportsPage({ students, sectionName }) {
 
 // ─── Student View (Demo) ────────────────────────────────
 
-const DEMO_PATHS = [
-  { id: 'retail-food', name: 'Retail / Food Service', emoji: '🛒', income: 2000, debt: 0 },
-  { id: 'trades', name: 'Trades Apprentice', emoji: '🔧', income: 2650, debt: 0 },
-  { id: 'office-admin', name: 'Office / Admin', emoji: '💼', income: 2400, debt: 0 },
-  { id: 'military', name: 'Military Enlistment', emoji: '🪖', income: 2300, debt: 0 },
-  { id: 'gig-freelance', name: 'Gig / Freelance', emoji: '📱', income: 2100, debt: 0 },
-  { id: 'healthcare', name: 'Healthcare Support', emoji: '🏥', income: 2500, debt: 0 },
-  { id: 'cc-parttime', name: 'CC + Part-Time', emoji: '📚', income: 1200, debt: 4500 },
-  { id: 'cc-fulltime', name: 'CC + Full-Time', emoji: '⚡', income: 2000, debt: 4500 },
-  { id: 'uni-oncampus', name: 'University On Campus', emoji: '🎓', income: 1000, debt: 11000 },
-  { id: 'uni-offcampus', name: 'University Off Campus', emoji: '🏠', income: 1000, debt: 11000 },
+const DEMO_LIFE_PATHS = [
+  {
+    id: 'retail-food', emoji: '🛒', name: 'Retail / Food Service',
+    category: 'straight-to-work',
+    shortDesc: 'Cashier, server, barista, stock clerk',
+    fullDesc: 'Start working right away in retail, restaurants, or customer service. The pay is modest, but you\'re gaining real-world experience and building your resume from day one.',
+    jobs: 'Cashier, server, barista, stock clerk, host',
+    incomeRange: [1800, 2200], debtRange: [0, 0], savingsRange: [200, 800],
+  },
+  {
+    id: 'trades', emoji: '🔧', name: 'Trades Apprentice',
+    category: 'straight-to-work',
+    shortDesc: 'Plumber, electrician, welder, HVAC',
+    fullDesc: 'Skip the classroom and learn a skilled trade from experienced professionals. The pay starts solid and grows fast as you gain certifications.',
+    jobs: 'Plumber, electrician, welder, HVAC technician',
+    incomeRange: [2400, 2900], debtRange: [0, 0], savingsRange: [300, 1000],
+  },
+  {
+    id: 'office-admin', emoji: '💼', name: 'Office / Admin',
+    category: 'straight-to-work',
+    shortDesc: 'Receptionist, data entry, office assistant',
+    fullDesc: 'Land a steady office job with predictable hours and basic benefits. Not the most exciting, but a reliable foundation.',
+    jobs: 'Receptionist, data entry clerk, office assistant',
+    incomeRange: [2200, 2600], debtRange: [0, 0], savingsRange: [300, 900],
+  },
+  {
+    id: 'military', emoji: '🪖', name: 'Military Enlistment',
+    category: 'straight-to-work',
+    shortDesc: 'Active duty with housing and benefits',
+    fullDesc: 'Enlist in the armed forces for structured life, steady pay, housing allowance, and veterans\' benefits. Discipline required.',
+    jobs: 'Active duty — various roles and specialties',
+    incomeRange: [2100, 2500], debtRange: [0, 0], savingsRange: [500, 1200],
+  },
+  {
+    id: 'gig-freelance', emoji: '📱', name: 'Gig / Freelance',
+    category: 'straight-to-work',
+    shortDesc: 'Rideshare, delivery, tutoring, social media',
+    fullDesc: 'Be your own boss in the gig economy. Your schedule is flexible and the ceiling is high, but income swings week to week.',
+    jobs: 'Rideshare driver, delivery, tutor, social media freelancer',
+    incomeRange: [1400, 2800], debtRange: [0, 0], savingsRange: [100, 600],
+  },
+  {
+    id: 'healthcare', emoji: '🏥', name: 'Healthcare Support',
+    category: 'straight-to-work',
+    shortDesc: 'CNA, medical assistant, home health aide',
+    fullDesc: 'Get certified and jump into healthcare. The work is demanding but meaningful, and the field is always hiring.',
+    jobs: 'CNA, medical assistant, home health aide, phlebotomist',
+    incomeRange: [2300, 2700], debtRange: [0, 0], savingsRange: [300, 900],
+  },
+  {
+    id: 'cc-parttime', emoji: '📚', name: 'CC + Part-Time Work',
+    category: 'community-college',
+    shortDesc: 'Classes + part-time job, lower income',
+    fullDesc: 'Attend community college while working part-time. You\'re balancing classes, studying, and a job — but keeping debt low compared to a four-year school.',
+    jobs: 'Part-time retail, campus job, tutoring',
+    incomeRange: [1000, 1400], debtRange: [3000, 6000], savingsRange: [100, 500],
+  },
+  {
+    id: 'cc-fulltime', emoji: '⚡', name: 'CC + Full-Time Work',
+    category: 'community-college',
+    shortDesc: 'Classes + full-time job, higher income',
+    fullDesc: 'Tackle community college while working full-time. It\'s exhausting but you\'re earning more and still building toward a degree.',
+    jobs: 'Full-time retail, office work, warehouse',
+    incomeRange: [1800, 2200], debtRange: [3000, 6000], savingsRange: [200, 600],
+  },
+  {
+    id: 'uni-oncampus', emoji: '🎓', name: 'University On Campus',
+    category: 'university',
+    shortDesc: 'Dorms, meal plan, campus life',
+    fullDesc: 'Live on campus at a four-year university. Between tuition, room and board, and a meal plan, costs are high — but so are the connections and opportunities.',
+    jobs: 'Work-study, campus dining, RA, library assistant',
+    incomeRange: [800, 1200], debtRange: [8000, 14000], savingsRange: [50, 300],
+  },
+  {
+    id: 'uni-offcampus', emoji: '🏠', name: 'University Off Campus',
+    category: 'university',
+    shortDesc: 'Apartment, more freedom, more bills',
+    fullDesc: 'Attend university but live off campus. You traded the dorm for an apartment — more independence, but also rent, groceries, and utility bills.',
+    jobs: 'Part-time work, internships, freelance',
+    incomeRange: [800, 1200], debtRange: [8000, 14000], savingsRange: [50, 400],
+  },
 ]
-const DEMO_WEEKS = [1, 7, 14, 22, 30, 36]
+
+const DEMO_PATH_CATEGORIES = [
+  { id: 'straight-to-work', name: 'Straight to Work' },
+  { id: 'community-college', name: 'Community College' },
+  { id: 'university', name: 'University' },
+]
+
+const DEMO_LOCATIONS = [
+  { id: 'big-city', name: 'Big City', description: 'Lots of opportunities but high rent and expenses.', rentLabel: 'Rent', rentRange: [1100, 1400] },
+  { id: 'mid-size-city', name: 'Mid-Size City', description: 'A good balance of jobs, amenities, and affordability.', rentLabel: 'Rent', rentRange: [800, 1000] },
+  { id: 'small-town', name: 'Small Town', description: 'Lower costs but fewer job options. Your money stretches further.', rentLabel: 'Rent', rentRange: [550, 750] },
+  { id: 'living-at-home', name: 'Living at Home', description: 'Stay with family and contribute to household expenses while you save.', rentLabel: 'Family contribution', rentRange: [200, 350], onlyCategories: ['straight-to-work', 'community-college'] },
+]
+
+const DEMO_SKIN_TONES = [
+  { label: 'Default', modifier: '' },
+  { label: 'Light', modifier: '\u{1F3FB}' },
+  { label: 'Medium-light', modifier: '\u{1F3FC}' },
+  { label: 'Medium', modifier: '\u{1F3FD}' },
+  { label: 'Medium-dark', modifier: '\u{1F3FE}' },
+  { label: 'Dark', modifier: '\u{1F3FF}' },
+]
+
+const DEMO_CHAR_STYLES = [
+  { base: '🧑', label: 'Person' }, { base: '👩', label: 'Woman' }, { base: '👨', label: 'Man' },
+  { base: '👱‍♀️', label: 'Blonde woman' }, { base: '👱', label: 'Blonde man' }, { base: '🧔', label: 'Beard' },
+  { base: '👩‍🦱', label: 'Curly woman' }, { base: '👨‍🦱', label: 'Curly man' },
+  { base: '👩‍🦰', label: 'Red hair woman' }, { base: '👨‍🦰', label: 'Red hair man' },
+  { base: '👩‍🦳', label: 'White hair woman' }, { base: '👨‍🦳', label: 'White hair man' }, { base: '🧑‍🦲', label: 'Bald' },
+]
+
+const DEMO_BG_COLORS = [
+  '#E6F1FB', '#E1F5EE', '#EEEDFE', '#FAEEDA',
+  '#FBEAF0', '#F1EFE8', '#FAECE7', '#EAF3DE',
+  '#FCEBEB', '#D3D1C7', '#B5D4F4', '#9FE1CB',
+  '#FAC775', '#F4C0D1', '#CECBF6', '#C0DD97',
+]
+
+const DEMO_PERSONALITY_QS = [
+  { question: 'How did you handle money in high school?', options: ['Saved almost everything', 'Spent it as fast as I earned it', 'Never really had any', 'Gave a lot of it away'] },
+  { question: 'When something goes wrong financially, you...', options: ['Make a plan immediately', 'Ask family for help', 'Stress and avoid it', 'Figure it out as I go'] },
+  { question: 'Your biggest financial goal right now is...', options: ['Move out on my own', 'Buy a car', 'Save for something big', 'Just survive month to month'] },
+]
+
+const DEMO_PATH_STORIES = {
+  'retail-food': 'Right after graduation, you jumped into the workforce, landing a job in food service and retail.',
+  'trades': 'You skipped college and started a trades apprenticeship, learning hands-on skills that pay well.',
+  'office-admin': 'You found a steady office job right out of high school — not glamorous, but reliable.',
+  'military': 'You enlisted in the military after graduation, trading freedom for structure, benefits, and steady pay.',
+  'gig-freelance': "You're hustling in the gig economy — rideshare, delivery, freelance work. Flexible but unpredictable.",
+  'healthcare': 'You got certified and started working in healthcare. The work is tough but always in demand.',
+  'cc-parttime': "You're in community college part-time while working. Balancing school and a job is hard, but you're keeping debt low.",
+  'cc-fulltime': "You're tackling community college while working full-time. Exhausting, but you're building toward something.",
+  'uni-oncampus': "You're living on campus at a four-year university. The costs are steep, but the experience is worth it.",
+  'uni-offcampus': "You're at university but living off campus to save money. More independence, more bills.",
+}
+
+const DEMO_LOC_STORIES = {
+  'big-city': 'Living in a big city means high rent but endless opportunities.',
+  'mid-size-city': 'Your mid-size city has solid job options without the sky-high costs of a major metro.',
+  'small-town': "Small-town living keeps costs down, though there's less to spend money on anyway.",
+  'living-at-home': 'Staying with family saves a fortune on rent while you build up your savings.',
+}
+
+const DEMO_STEP_TITLES = ['', 'Character Name', 'Build Your Avatar', 'Choose Your Path', 'Pick Your Location', 'Money Personality', 'Your Starting Snapshot']
+
+function demoApplySkinTone(emoji, modifier) {
+  if (!modifier) return emoji
+  const chars = [...emoji]
+  return chars[0] + modifier + chars.slice(1).join('')
+}
+
+function demoRand(min, max) {
+  return Math.round(min + Math.random() * (max - min))
+}
+
+function demoGenFinancials(path, location) {
+  const monthlyIncome = demoRand(path.incomeRange[0], path.incomeRange[1])
+  const startingSavings = demoRand(path.savingsRange[0], path.savingsRange[1])
+  const startingDebt = demoRand(path.debtRange[0], path.debtRange[1])
+  const monthlyRent = demoRand(location.rentRange[0], location.rentRange[1])
+  const otherExpenses = demoRand(400, 600)
+  return { monthlyIncome, startingSavings, startingDebt, monthlyRent, monthlyExpenses: monthlyRent + otherExpenses, netWorth: startingSavings - startingDebt, creditScore: 650 }
+}
 
 function DemoPage() {
-  const [selectedPath, setSelectedPath] = useState(null)
-  const [selectedWeek, setSelectedWeek] = useState(14)
-  const [active, setActive] = useState(false)
+  const [phase, setPhase] = useState('pick')
+  const [step, setStep] = useState(1)
+  const [charName, setCharName] = useState('')
+  const [skinTone, setSkinTone] = useState('')
+  const [styleBase, setStyleBase] = useState('🧑')
+  const [bgColor, setBgColor] = useState('#E6F1FB')
+  const [demoPath, setDemoPath] = useState(null)
+  const [demoLocation, setDemoLocation] = useState(null)
+  const [personality, setPersonality] = useState([null, null, null])
+  const [financials, setFinancials] = useState(null)
+  const [backstory, setBackstory] = useState('')
+  const [demoWeek, setDemoWeek] = useState(0)
 
-  if (active && selectedPath) {
-    const weeks = selectedWeek
-    const income = selectedPath.income
-    const debt = Math.max(0, selectedPath.debt - (weeks * 50))
-    const savings = weeks * Math.round(income * 0.1)
-    const cash = income - Math.round(income * 0.7) + savings
-    const nw = cash + savings - debt
-    const credit = Math.min(850, 650 + weeks * 3)
+  function resetAll() {
+    setPhase('pick')
+    setStep(1)
+    setCharName('')
+    setSkinTone('')
+    setStyleBase('🧑')
+    setBgColor('#E6F1FB')
+    setDemoPath(null)
+    setDemoLocation(null)
+    setPersonality([null, null, null])
+    setFinancials(null)
+    setBackstory('')
+    setDemoWeek(0)
+  }
 
+  const emoji = demoApplySkinTone(styleBase, skinTone)
+
+  function canAdvanceStep() {
+    switch (step) {
+      case 1: return charName.trim().length >= 2
+      case 2: return true
+      case 3: return demoPath !== null
+      case 4: return demoLocation !== null
+      case 5: return personality.every(a => a !== null)
+      default: return true
+    }
+  }
+
+  function handleStepNext() {
+    if (step === 5) {
+      const fin = demoGenFinancials(demoPath, demoLocation)
+      setFinancials(fin)
+      const trait = { 'Saved almost everything': "You've always been a natural saver", 'Spent it as fast as I earned it': "You've never been great at holding onto money", 'Never really had any': 'Money was always tight growing up', 'Gave a lot of it away': "You've always been generous, sometimes too generous" }[personality[0]] || "You're still figuring out your relationship with money"
+      const goal = { 'Move out on my own': 'getting your own place', 'Buy a car': 'saving up for a car', 'Save for something big': 'saving up for something big', 'Just survive month to month': 'just getting through each month' }[personality[2]] || 'finding your footing'
+      setBackstory(`${DEMO_PATH_STORIES[demoPath.id]} ${DEMO_LOC_STORIES[demoLocation.id]} ${trait}, and your biggest goal right now is ${goal}.`)
+    }
+    setStep(step + 1)
+  }
+
+  function handleLaunchSim() {
+    setPhase('dashboard')
+    setDemoWeek(0)
+  }
+
+  function selectPath(path) {
+    if (demoPath?.category !== path.category) setDemoLocation(null)
+    setDemoPath(path)
+  }
+
+  const availableLocations = DEMO_LOCATIONS.filter(
+    loc => !loc.onlyCategories || loc.onlyCategories.includes(demoPath?.category)
+  )
+
+  // ── Phase: Pick a path (entry screen) ──
+  if (phase === 'pick') {
     return (
       <div>
-        <div className="td-demo-banner">
-          <span>👁️ Demo Mode — {selectedPath.name}, Week {selectedWeek}</span>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.3rem 0.75rem', fontSize: '0.8rem' }} onClick={() => setActive(false)}>Switch Path</button>
-            <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.3rem 0.75rem', fontSize: '0.8rem', background: '#7c3aed', color: 'white' }} onClick={() => { setActive(false); setSelectedPath(null) }}>Exit Demo</button>
-          </div>
+        <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+          Walk through the full student experience — character creation, financial setup, and the live dashboard. Nothing saves to the database.
+        </p>
+        <div className="td-demo-paths">
+          {DEMO_LIFE_PATHS.map(p => (
+            <button key={p.id} className={`option-card ${demoPath?.id === p.id ? 'selected' : ''}`} onClick={() => setDemoPath(p)} type="button">
+              <div style={{ fontWeight: 600 }}>{p.emoji} {p.name}</div>
+              <div className="option-meta">{money(p.incomeRange[0])}–{money(p.incomeRange[1])}/mo · {p.debtRange[1] > 0 ? money(p.debtRange[0]) + '–' + money(p.debtRange[1]) + ' debt' : 'No debt'}</div>
+            </button>
+          ))}
         </div>
-        <div className="td-stats" style={{ marginTop: '1rem' }}>
-          <div className="stat-card"><p className="stat-label">Net Worth</p><p className="stat-value">{money(nw)}</p></div>
-          <div className="stat-card"><p className="stat-label">Monthly Income</p><p className="stat-value">{money(income)}</p></div>
-          <div className="stat-card"><p className="stat-label">Savings</p><p className="stat-value">{money(savings)}</p></div>
-          <div className="stat-card"><p className="stat-label">Debt</p><p className="stat-value" style={{ color: debt > 0 ? '#dc2626' : 'inherit' }}>{debt > 0 ? money(debt) : 'None'}</p></div>
-          <div className="stat-card"><p className="stat-label">Credit Score</p><p className="stat-value">{credit}</p></div>
-          <div className="stat-card"><p className="stat-label">Cash on Hand</p><p className="stat-value">{money(cash)}</p></div>
-        </div>
-        <p style={{ color: 'var(--gray-400)', fontSize: '0.85rem', textAlign: 'center', marginTop: '1rem' }}>This is a simulated preview. No data is saved.</p>
+        <button className="btn btn-primary" style={{ width: 'auto', padding: '0.6rem 1.5rem', marginTop: '1rem' }} onClick={() => { setStep(1); setPhase('wizard') }} disabled={!demoPath}>Launch Demo</button>
       </div>
     )
   }
 
-  return (
-    <div>
-      <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem', marginBottom: '1rem' }}>Preview the student experience. Select a life path and week to see a simulated dashboard.</p>
+  // ── Phase: Character creation wizard ──
+  if (phase === 'wizard') {
+    return (
+      <div>
+        <div className="td-demo-banner">
+          <span>👁️ Demo Mode — Character Creation</span>
+          <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.3rem 0.75rem', fontSize: '0.8rem', background: '#7c3aed', color: 'white', border: 'none' }} onClick={resetAll}>Exit Demo</button>
+        </div>
 
-      <div className="td-demo-paths">
-        {DEMO_PATHS.map(p => (
-          <button key={p.id} className={`option-card ${selectedPath?.id === p.id ? 'selected' : ''}`} onClick={() => setSelectedPath(p)} type="button">
-            <div style={{ fontWeight: 600 }}>{p.emoji} {p.name}</div>
-            <div className="option-meta">{money(p.income)}/mo · {p.debt > 0 ? money(p.debt) + ' debt' : 'No debt'}</div>
-          </button>
-        ))}
+        <div style={{ maxWidth: 520, margin: '1rem auto 0' }}>
+          <div className="card wizard-card">
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--gray-400)' }}>Step {step} of 6</p>
+              <h2 style={{ fontSize: '1.25rem', margin: '0.25rem 0' }}>{DEMO_STEP_TITLES[step]}</h2>
+              <div className="wizard-progress"><div className="wizard-progress-bar" style={{ width: `${(step / 6) * 100}%` }} /></div>
+            </div>
+
+            {step === 1 && (
+              <div>
+                <label className="section-label">What should we call your character?</label>
+                <input className="input" type="text" placeholder="Enter a name..." value={charName} onChange={e => setCharName(e.target.value)} maxLength={30} autoFocus />
+                {charName.length > 0 && charName.length < 2 && <p style={{ color: 'var(--gray-400)', fontSize: '0.8rem', marginTop: '0.4rem' }}>Name must be at least 2 characters</p>}
+              </div>
+            )}
+
+            {step === 2 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div className="avatar-preview" style={{ backgroundColor: bgColor }}>{emoji}</div>
+                <div>
+                  <p className="section-label">Skin tone</p>
+                  <div className="emoji-grid">
+                    {DEMO_SKIN_TONES.map(tone => (
+                      <button key={tone.label} className={`emoji-btn ${skinTone === tone.modifier ? 'selected' : ''}`} onClick={() => setSkinTone(tone.modifier)} title={tone.label} type="button">{demoApplySkinTone('🧑', tone.modifier)}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="section-label">Character style</p>
+                  <div className="emoji-grid">
+                    {DEMO_CHAR_STYLES.map(style => (
+                      <button key={style.label} className={`emoji-btn ${styleBase === style.base ? 'selected' : ''}`} onClick={() => setStyleBase(style.base)} title={style.label} type="button">{demoApplySkinTone(style.base, skinTone)}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="section-label">Background color</p>
+                  <div className="color-grid">
+                    {DEMO_BG_COLORS.map(color => (
+                      <button key={color} className={`color-swatch ${bgColor === color ? 'selected' : ''}`} style={{ backgroundColor: color }} onClick={() => setBgColor(color)} title={color} type="button" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div>
+                {DEMO_PATH_CATEGORIES.map(cat => {
+                  const paths = DEMO_LIFE_PATHS.filter(p => p.category === cat.id)
+                  return (
+                    <div key={cat.id} className="path-group">
+                      <p className="path-group-title">{cat.name}</p>
+                      <div className="options-grid">
+                        {paths.map(path => (
+                          <button key={path.id} className={`option-card ${demoPath?.id === path.id ? 'selected' : ''}`} onClick={() => selectPath(path)} type="button">
+                            <div style={{ fontWeight: 600 }}>{path.emoji} {path.name}</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--gray-500)', marginTop: '0.15rem' }}>{path.shortDesc}</div>
+                            <div className="option-meta">{money(path.incomeRange[0])}–{money(path.incomeRange[1])}/mo{path.debtRange[1] > 0 ? ` · ${money(path.debtRange[0])}–${money(path.debtRange[1])} debt` : ' · No starting debt'}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+                {demoPath && (
+                  <div className="detail-panel">
+                    <p style={{ fontWeight: 600, marginBottom: '0.4rem' }}>{demoPath.emoji} {demoPath.name}</p>
+                    <p style={{ marginBottom: '0.4rem' }}>{demoPath.fullDesc}</p>
+                    <p style={{ color: 'var(--gray-500)' }}><strong>Job examples:</strong> {demoPath.jobs}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="options-grid">
+                {availableLocations.map(loc => (
+                  <button key={loc.id} className={`option-card ${demoLocation?.id === loc.id ? 'selected' : ''}`} onClick={() => setDemoLocation(loc)} type="button">
+                    <div style={{ fontWeight: 600 }}>{loc.name}</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--gray-500)', marginTop: '0.15rem' }}>{loc.description}</div>
+                    <div className="option-meta">{loc.rentLabel}: {money(loc.rentRange[0])}–{money(loc.rentRange[1])}/mo</div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {step === 5 && (
+              <div>
+                {DEMO_PERSONALITY_QS.map((q, qi) => (
+                  <div key={qi} className="question-group">
+                    <p className="question-text">{q.question}</p>
+                    <div className="options-grid">
+                      {q.options.map(opt => (
+                        <button key={opt} className={`option-card ${personality[qi] === opt ? 'selected' : ''}`} onClick={() => { const next = [...personality]; next[qi] = opt; setPersonality(next) }} type="button">{opt}</button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {step === 6 && financials && (
+              <div>
+                <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                  <div className="avatar-preview avatar-preview-sm" style={{ backgroundColor: bgColor }}>{emoji}</div>
+                  <h3 style={{ fontSize: '1.1rem' }}>{charName}</h3>
+                  <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem' }}>{demoPath.emoji} {demoPath.name} · {demoLocation.name}</p>
+                </div>
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <div className="summary-row"><span className="summary-label">Monthly Income</span><span className="summary-value">{money(financials.monthlyIncome)}/mo</span></div>
+                  <div className="summary-row"><span className="summary-label">{demoLocation.rentLabel}</span><span className="summary-value">{money(financials.monthlyRent)}/mo</span></div>
+                  <div className="summary-row"><span className="summary-label">Starting Savings</span><span className="summary-value">{money(financials.startingSavings)}</span></div>
+                  <div className="summary-row"><span className="summary-label">Starting Debt</span><span className="summary-value" style={{ color: financials.startingDebt > 0 ? '#dc2626' : 'inherit' }}>{financials.startingDebt > 0 ? money(financials.startingDebt) : 'None'}</span></div>
+                  <div className="summary-row"><span className="summary-label">Credit Score</span><span className="summary-value">{financials.creditScore}</span></div>
+                </div>
+                <div className="backstory"><p>{backstory}</p></div>
+              </div>
+            )}
+
+            <div className="wizard-nav">
+              {step > 1 && <button className="btn btn-secondary" onClick={() => setStep(step - 1)} type="button">Back</button>}
+              {step < 6 ? (
+                <button className="btn btn-primary" onClick={handleStepNext} disabled={!canAdvanceStep()} type="button">Next</button>
+              ) : (
+                <button className="btn btn-primary" onClick={handleLaunchSim} type="button">Launch Simulation</button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
+    )
+  }
 
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1rem', marginBottom: '1rem' }}>
-        {DEMO_WEEKS.map(w => (
-          <button key={w} className={`td-action-btn ${selectedWeek === w ? 'td-action-active' : ''}`} onClick={() => setSelectedWeek(w)} style={{ padding: '0.4rem 0.75rem' }}>Week {w}</button>
-        ))}
+  // ── Phase: Simulated student dashboard ──
+  if (phase === 'dashboard' && financials) {
+    const w = demoWeek
+    const income = financials.monthlyIncome
+    const baseExpenses = financials.monthlyExpenses
+    const startDebt = financials.startingDebt
+    const startSavings = financials.startingSavings
+
+    const savings = startSavings + w * Math.round(income * 0.08)
+    const debt = Math.max(0, startDebt - w * 55)
+    const totalExpenses = baseExpenses + (debt > 0 ? Math.max(25, Math.round(debt * 0.02)) : 0)
+    const cash = Math.round(income - baseExpenses * 0.65) + Math.round(w * income * 0.03)
+    const nw = cash + savings - debt
+    const credit = Math.min(850, 650 + w * 3 - (debt > income * 3 ? 10 : 0))
+    const savingsRate = Math.max(0, Math.round(((income - totalExpenses) / income) * 100))
+
+    const budgetScore = Math.min(100, Math.max(0, 50 + savingsRate * 2.5))
+    const debtScore = debt === 0 ? 95 : Math.max(0, 100 - (debt / income) * 8)
+    const savingsScore = Math.min(100, (savings / income) * 25)
+
+    const gradeData = [
+      { label: 'Budgeting', score: Math.round(budgetScore) },
+      { label: 'Debt Management', score: Math.round(debtScore) },
+      { label: 'Savings', score: Math.round(savingsScore) },
+    ]
+
+    const historyPts = Array.from({ length: w + 1 }, (_, i) => {
+      const s = startSavings + i * Math.round(income * 0.08)
+      const d = Math.max(0, startDebt - i * 55)
+      const c = Math.round(income - baseExpenses * 0.65) + Math.round(i * income * 0.03)
+      return { week: i, net_worth: c + s - d }
+    })
+
+    const chartW = 520, chartH = 180, PL = 55, PR = 15, PT = 15, PB = 30
+    const pW = chartW - PL - PR, pH = chartH - PT - PB
+    const vals = historyPts.map(d => d.net_worth)
+    const minV = Math.min(...vals), maxV = Math.max(...vals)
+    const range = maxV - minV || 1
+    const cx = i => PL + (historyPts.length > 1 ? (i / (historyPts.length - 1)) * pW : pW / 2)
+    const cy = v => PT + pH - ((v - minV) / range) * pH
+    const chartPoints = historyPts.map((d, i) => `${cx(i)},${cy(d.net_worth)}`).join(' ')
+    const yTicks = 4
+    const yLabels = Array.from({ length: yTicks + 1 }, (_, i) => minV + (range / yTicks) * i)
+
+    const expItems = [
+      { label: 'Rent', amount: Math.round(baseExpenses * 0.5), color: '#3b82f6' },
+      { label: 'Food', amount: Math.round(baseExpenses * 0.22), color: '#22c55e' },
+      { label: 'Transport', amount: Math.round(baseExpenses * 0.13), color: '#f59e0b' },
+      { label: 'Phone / Utilities', amount: Math.round(baseExpenses * 0.08), color: '#8b5cf6' },
+      { label: 'Personal', amount: Math.round(baseExpenses * 0.07), color: '#ec4899' },
+      { label: 'Savings', amount: Math.max(0, income - totalExpenses), color: '#06b6d4' },
+    ]
+    const expMax = Math.max(...expItems.map(i => i.amount), 1)
+
+    const creditPct = ((credit - 300) / 550) * 100
+    const creditLabel = credit >= 740 ? 'Excellent' : credit >= 670 ? 'Good' : credit >= 580 ? 'Fair' : 'Poor'
+    const creditClr = credit >= 740 ? '#16a34a' : credit >= 670 ? '#22c55e' : credit >= 580 ? '#eab308' : '#dc2626'
+
+    return (
+      <div>
+        <div className="td-demo-banner">
+          <span>👁️ Demo Mode — {charName || 'Student'}, {demoPath.emoji} {demoPath.name}, Week {demoWeek}</span>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.3rem 0.75rem', fontSize: '0.8rem' }} onClick={() => { setPhase('pick'); setStep(1); setDemoPath(null); setDemoLocation(null); setFinancials(null) }}>New Character</button>
+            <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.3rem 0.75rem', fontSize: '0.8rem', background: '#7c3aed', color: 'white', border: 'none' }} onClick={resetAll}>Exit Demo</button>
+          </div>
+        </div>
+
+        {/* Top bar */}
+        <div className="dash-header" style={{ marginTop: '1rem' }}>
+          <div className="dash-header-left">
+            <div className="dash-avatar" style={{ backgroundColor: bgColor }}>{emoji}</div>
+            <div>
+              <h1 className="dash-name">{charName || 'Demo Student'}</h1>
+              <p className="dash-subtitle">{demoPath.emoji} {demoPath.name} · {demoLocation.name}</p>
+            </div>
+          </div>
+          <div className="dash-header-right">
+            <span className="dash-week-badge">Week {demoWeek} of 36</span>
+          </div>
+        </div>
+
+        {/* Advance week controls */}
+        <section className="dash-section advance-section" style={{ marginTop: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+            <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>Simulate advancing weeks</p>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.4rem 0.85rem', fontSize: '0.85rem' }} onClick={() => setDemoWeek(Math.max(0, demoWeek - 1))} disabled={demoWeek <= 0}>- 1 Week</button>
+              <button className="btn btn-primary" style={{ width: 'auto', padding: '0.4rem 0.85rem', fontSize: '0.85rem' }} onClick={() => setDemoWeek(Math.min(36, demoWeek + 1))} disabled={demoWeek >= 36}>+ 1 Week</button>
+              <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.4rem 0.85rem', fontSize: '0.85rem' }} onClick={() => setDemoWeek(Math.min(36, demoWeek + 4))} disabled={demoWeek >= 36}>+ 4 Weeks</button>
+              <button className="btn btn-secondary" style={{ width: 'auto', padding: '0.4rem 0.85rem', fontSize: '0.85rem' }} onClick={() => setDemoWeek(0)}>Reset</button>
+            </div>
+          </div>
+        </section>
+
+        {/* Stat cards */}
+        <div className="dash-stats" style={{ marginTop: '0.75rem' }}>
+          <div className="stat-card"><p className="stat-label">Net Worth</p><p className="stat-value">{money(nw)}</p></div>
+          <div className="stat-card"><p className="stat-label">Cash on Hand</p><p className="stat-value">{money(cash)}</p></div>
+          <div className="stat-card"><p className="stat-label">Monthly Income</p><p className="stat-value">{money(income)}</p></div>
+          <div className="stat-card"><p className="stat-label">Monthly Expenses</p><p className="stat-value">{money(totalExpenses)}</p></div>
+          <div className="stat-card"><p className="stat-label">Total Debt</p><p className="stat-value" style={{ color: debt > 0 ? '#dc2626' : 'inherit' }}>{debt > 0 ? money(debt) : 'None'}</p></div>
+          <div className="stat-card"><p className="stat-label">Savings Rate</p><p className="stat-value">{savingsRate}%</p></div>
+        </div>
+
+        {/* Net worth chart */}
+        <section className="dash-section">
+          <h2 className="dash-section-title">Net Worth Over Time</h2>
+          {historyPts.length < 2 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--gray-400)', fontSize: '0.9rem' }}>Chart will appear after Week 1</div>
+          ) : (
+            <svg viewBox={`0 0 ${chartW} ${chartH}`} style={{ width: '100%', height: 'auto' }}>
+              {yLabels.map((v, i) => (
+                <g key={i}>
+                  <line x1={PL} x2={chartW - PR} y1={cy(v)} y2={cy(v)} stroke="var(--gray-200)" strokeWidth="1" />
+                  <text x={PL - 8} y={cy(v) + 4} textAnchor="end" fontSize="10" fill="var(--gray-400)">{money(v)}</text>
+                </g>
+              ))}
+              <polyline fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinejoin="round" points={chartPoints} />
+              {historyPts.map((d, i) => <circle key={i} cx={cx(i)} cy={cy(d.net_worth)} r="3.5" fill="var(--green)" />)}
+              {historyPts.map((d, i) => (historyPts.length <= 12 || i % Math.ceil(historyPts.length / 12) === 0 || i === historyPts.length - 1) && (
+                <text key={`l${i}`} x={cx(i)} y={chartH - 6} textAnchor="middle" fontSize="10" fill="var(--gray-400)">W{d.week}</text>
+              ))}
+            </svg>
+          )}
+        </section>
+
+        {/* Budget breakdown */}
+        <section className="dash-section">
+          <h2 className="dash-section-title">Monthly Budget Breakdown</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            {expItems.map(item => (
+              <div key={item.label}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.2rem' }}>
+                  <span style={{ color: 'var(--gray-700)' }}>{item.label}</span>
+                  <span style={{ color: 'var(--gray-500)' }}>{money(item.amount)}/mo</span>
+                </div>
+                <div style={{ height: 8, background: 'var(--gray-100)', borderRadius: 4 }}>
+                  <div style={{ height: '100%', width: `${(item.amount / expMax) * 100}%`, background: item.color, borderRadius: 4, transition: 'width 0.3s' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Grades + Credit */}
+        <div className="dash-bottom-grid">
+          <section className="dash-section">
+            <h2 className="dash-section-title">Financial Health</h2>
+            <div className="grades-list">
+              {gradeData.map(g => {
+                const gr = g.score >= 90 ? { letter: 'A', color: '#16a34a' } : g.score >= 80 ? { letter: 'B', color: '#22c55e' } : g.score >= 70 ? { letter: 'C', color: '#eab308' } : g.score >= 60 ? { letter: 'D', color: '#f97316' } : { letter: 'F', color: '#dc2626' }
+                return (
+                  <div key={g.label} className="grade-row">
+                    <span className="grade-label">{g.label}</span>
+                    <div className="grade-bar-track"><div className="grade-bar-fill" style={{ width: `${g.score}%`, background: gr.color }} /></div>
+                    <span className="grade-letter" style={{ color: gr.color }}>{gr.letter}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+
+          <section className="dash-section">
+            <h2 className="dash-section-title">Credit Score</h2>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2.5rem', fontWeight: 700, color: creditClr, lineHeight: 1.2 }}>{credit}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--gray-400)', marginBottom: '0.75rem' }}>{creditLabel}</div>
+              <div style={{ height: 10, borderRadius: 5, background: 'linear-gradient(to right, #dc2626, #f97316, #eab308, #22c55e, #16a34a)', position: 'relative' }}>
+                <div style={{ position: 'absolute', top: -3, left: `${creditPct}%`, transform: 'translateX(-50%)', width: 16, height: 16, borderRadius: '50%', border: '3px solid white', background: creditClr, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--gray-400)', marginTop: '0.3rem' }}><span>300</span><span>850</span></div>
+            </div>
+          </section>
+        </div>
+
+        <p style={{ color: 'var(--gray-400)', fontSize: '0.85rem', textAlign: 'center', marginTop: '1rem' }}>This is a simulated preview. No data is saved to the database.</p>
       </div>
+    )
+  }
 
-      <button className="btn btn-primary" style={{ width: 'auto', padding: '0.6rem 1.5rem' }} onClick={() => setActive(true)} disabled={!selectedPath}>Launch Demo</button>
-    </div>
-  )
+  return null
 }
 
 // ─── Main Teacher Dashboard ─────────────────────────────
