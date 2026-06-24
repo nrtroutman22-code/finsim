@@ -1376,7 +1376,11 @@ Be encouraging but honest. Use simple language. No bullet points, just flowing s
         <div className="stat-card"><p className="stat-label">Monthly Income</p><p className="stat-value">{money(latest.monthly_income)}</p></div>
         <div className="stat-card"><p className="stat-label">Monthly Expenses</p><p className="stat-value">{money(latest.monthly_expenses)}</p></div>
         <div className="stat-card"><p className="stat-label">Total Debt</p><p className="stat-value" style={{ color: Number(latest.debt) > 0 ? '#dc2626' : 'inherit' }}>{Number(latest.debt) > 0 ? money(latest.debt) : 'None'}</p></div>
-        <div className="stat-card"><p className="stat-label">Savings Rate</p><p className="stat-value">{pct(savingsRate)}</p></div>
+        <div className="stat-card">
+          <p className="stat-label">Total Savings</p>
+          <p className="stat-value" style={{ color: '#16a34a' }}>{money(latest.savings)}</p>
+          {previous && <p className={`stat-delta ${Number(latest.savings) - Number(previous.savings) >= 0 ? 'positive' : 'negative'}`}>{Number(latest.savings) - Number(previous.savings) >= 0 ? '↑' : '↓'} {money(Math.abs(Number(latest.savings) - Number(previous.savings)))} from last week</p>}
+        </div>
       </div>
 
       {/* ── Tab Bar ── */}
