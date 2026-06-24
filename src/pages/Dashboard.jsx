@@ -770,43 +770,29 @@ function MyClassTab({ sectionId, character, latest }) {
     if (!sectionId || !character) return
     async function load() {
       setLoading(true)
-      const { data: enrollments } = await supabase
-        .from('enrollments')
-        .select('id')
-        .eq('section_id', sectionId)
-        .eq('status', 'approved')
-      if (!enrollments || enrollments.length === 0) { setPeers([]); setLoading(false); return }
-
-      const results = await Promise.all(
-        enrollments.map(async (e) => {
-          const { data: char } = await supabase
-            .from('characters')
-            .select('id, life_path_id')
-            .eq('enrollment_id', e.id)
-            .single()
-          if (!char) return null
-          const { data: fs } = await supabase
-            .from('financial_states')
-            .select('net_worth, cash, savings, debt, credit_score, monthly_income, monthly_expenses')
-            .eq('character_id', char.id)
-            .order('week', { ascending: false })
-            .limit(1)
-            .single()
-          if (!fs) return null
-          const income = Number(fs.monthly_income) || 1
-          const expenses = Number(fs.monthly_expenses) || 0
-          return {
-            characterId: char.id,
-            lifePathId: char.life_path_id,
-            netWorth: Number(fs.net_worth) || 0,
-            savings: Number(fs.savings) || 0,
-            debt: Number(fs.debt) || 0,
-            creditScore: fs.credit_score || 650,
-            savingsRate: Math.max(0, Math.round(((income - expenses) / income) * 100)),
-          }
-        })
-      )
-      setPeers(results.filter(Boolean))
+      const { data, error } = await supabase.rpc('get_class_comparison', { p_section_id: sectionId })
+      if (error) {
+        console.log('[MyClassTab] RPC error:', error.message)
+        setPeers([])
+        setLoading(false)
+        return
+      }
+      const rows = data || []
+      console.log('[MyClassTab] Found', rows.length, 'students in section')
+      const results = rows.map(r => {
+        const income = Number(r.monthly_income) || 1
+        const expenses = Number(r.monthly_expenses) || 0
+        return {
+          characterId: r.character_id,
+          lifePathId: r.life_path_id,
+          netWorth: Number(r.net_worth) || 0,
+          savings: Number(r.savings) || 0,
+          debt: Number(r.debt) || 0,
+          creditScore: r.credit_score || 650,
+          savingsRate: Math.max(0, Math.round(((income - expenses) / income) * 100)),
+        }
+      })
+      setPeers(results)
       setLoading(false)
     }
     load()
