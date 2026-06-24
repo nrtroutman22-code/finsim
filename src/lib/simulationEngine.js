@@ -11,8 +11,12 @@ const RENT_RANGES = {
 
 const APR = 0.18
 const MONTHLY_INTEREST_RATE = APR / 12
+const STUDENT_LOAN_APR = 0.06
+const STUDENT_LOAN_MONTHLY_RATE = STUDENT_LOAN_APR / 12
 const MIN_DEBT_PAYMENT = 25
 const DEBT_PAYMENT_PCT = 0.02
+const SEMESTER_TUITION_WEEKS = [5, 14, 19]
+const SEMESTER_TUITION_AMOUNT = 10000
 
 function rand(min, max) {
   return Math.round(min + Math.random() * (max - min))
@@ -44,6 +48,7 @@ export async function advanceWeek(characterId) {
   const newWeek = current.week + 1
   const mod = Number(character.locations?.cost_of_living_modifier) || 1.0
   const locationId = character.location_id
+  const isUni = character.life_path_id === 'uni-oncampus'
 
   let cash = Number(current.cash)
   let savings = Number(current.savings)
@@ -51,13 +56,20 @@ export async function advanceWeek(characterId) {
   let creditScore = current.credit_score
   const monthlyIncome = Number(current.monthly_income)
 
+  // ── Semester tuition (uni-oncampus only) ──
+  let tuitionNotice = null
+  if (isUni && SEMESTER_TUITION_WEEKS.includes(newWeek)) {
+    debt += SEMESTER_TUITION_AMOUNT
+    tuitionNotice = `New semester, new loans! $${SEMESTER_TUITION_AMOUNT.toLocaleString()} in student loans added for this semester.`
+  }
+
   // ── Income ──
   cash += monthlyIncome
 
   // ── Automatic expenses ──
   const rentRange = RENT_RANGES[locationId] || [700, 900]
-  const rent = rand(rentRange[0], rentRange[1])
-  const food = rand(Math.round(200 * mod), Math.round(400 * mod))
+  const rent = isUni ? 0 : rand(rentRange[0], rentRange[1])
+  const food = isUni ? 0 : rand(Math.round(200 * mod), Math.round(400 * mod))
   const transport = rand(Math.round(100 * mod), Math.round(300 * mod))
   const phoneUtil = rand(100, 200)
 
@@ -68,12 +80,18 @@ export async function advanceWeek(characterId) {
   // ── Debt interest + minimum payment ──
   let debtPayment = 0
   if (debt > 0) {
-    const interest = Math.round(debt * MONTHLY_INTEREST_RATE)
+    const rate = isUni ? STUDENT_LOAN_MONTHLY_RATE : MONTHLY_INTEREST_RATE
+    const interest = Math.round(debt * rate)
     debt += interest
-    debtPayment = Math.max(MIN_DEBT_PAYMENT, Math.round(debt * DEBT_PAYMENT_PCT))
-    debtPayment = Math.min(debtPayment, debt)
-    debt -= debtPayment
-    cash -= debtPayment
+
+    if (isUni && newWeek < 28) {
+      // No payments due yet — in-school deferment
+    } else {
+      debtPayment = Math.max(MIN_DEBT_PAYMENT, Math.round(debt * DEBT_PAYMENT_PCT))
+      debtPayment = Math.min(debtPayment, debt)
+      debt -= debtPayment
+      cash -= debtPayment
+    }
   }
 
   // ── Credit score ──
@@ -121,6 +139,7 @@ export async function advanceWeek(characterId) {
   // ── Check badges ──
   await checkAndAwardBadges(characterId, inserted)
 
+  if (tuitionNotice) inserted._tuitionNotice = tuitionNotice
   return inserted
 }
 

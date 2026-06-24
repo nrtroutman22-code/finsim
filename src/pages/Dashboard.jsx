@@ -144,24 +144,37 @@ function NetWorthChart({ data, large }) {
 
 // ─── Budget Bars ───────────────────────────────────────
 
-function BudgetBreakdown({ latest, showRecommended }) {
+function BudgetBreakdown({ latest, showRecommended, isUni }) {
   const expenses = Number(latest.monthly_expenses) || 1
   const income = Number(latest.monthly_income) || 1
   const savingsAmt = Math.max(0, income - expenses)
-  const rent = Math.round(expenses * 0.40)
-  const food = Math.round(expenses * 0.20)
-  const transport = Math.round(expenses * 0.12)
-  const phone = Math.round(expenses * 0.08)
-  const personal = expenses - rent - food - transport - phone
 
-  const items = [
-    { label: 'Rent', amount: rent, color: '#3b82f6', recommended: showRecommended ? 30 : null },
-    { label: 'Food', amount: food, color: '#22c55e', recommended: showRecommended ? 15 : null },
-    { label: 'Transport', amount: transport, color: '#f59e0b', recommended: showRecommended ? 10 : null },
-    { label: 'Phone / Utilities', amount: phone, color: '#8b5cf6', recommended: showRecommended ? 5 : null },
-    { label: 'Personal', amount: personal, color: '#ec4899', recommended: showRecommended ? 10 : null },
-    { label: 'Savings', amount: savingsAmt, color: '#06b6d4', recommended: showRecommended ? 20 : null },
-  ]
+  let items
+  if (isUni) {
+    const transport = Math.round(expenses * 0.35)
+    const phone = Math.round(expenses * 0.25)
+    const personal = expenses - transport - phone
+    items = [
+      { label: 'Transport', amount: transport, color: '#f59e0b', recommended: null },
+      { label: 'Phone / Utilities', amount: phone, color: '#8b5cf6', recommended: null },
+      { label: 'Personal', amount: personal, color: '#ec4899', recommended: null },
+      { label: 'Savings', amount: savingsAmt, color: '#06b6d4', recommended: null },
+    ]
+  } else {
+    const rent = Math.round(expenses * 0.40)
+    const food = Math.round(expenses * 0.20)
+    const transport = Math.round(expenses * 0.12)
+    const phone = Math.round(expenses * 0.08)
+    const personal = expenses - rent - food - transport - phone
+    items = [
+      { label: 'Rent', amount: rent, color: '#3b82f6', recommended: showRecommended ? 30 : null },
+      { label: 'Food', amount: food, color: '#22c55e', recommended: showRecommended ? 15 : null },
+      { label: 'Transport', amount: transport, color: '#f59e0b', recommended: showRecommended ? 10 : null },
+      { label: 'Phone / Utilities', amount: phone, color: '#8b5cf6', recommended: showRecommended ? 5 : null },
+      { label: 'Personal', amount: personal, color: '#ec4899', recommended: showRecommended ? 10 : null },
+      { label: 'Savings', amount: savingsAmt, color: '#06b6d4', recommended: showRecommended ? 20 : null },
+    ]
+  }
   const max = Math.max(...items.map(i => i.amount), 1)
 
   return (
@@ -752,7 +765,7 @@ const PATH_TO_GROUP = {
   'retail-food': 'Straight to Work', trades: 'Straight to Work', 'office-admin': 'Straight to Work',
   military: 'Straight to Work', 'gig-freelance': 'Straight to Work', healthcare: 'Straight to Work',
   'cc-parttime': 'Community College', 'cc-fulltime': 'Community College',
-  'uni-oncampus': 'University', 'uni-offcampus': 'University',
+  'uni-oncampus': 'University',
   'four-year-college': 'University', 'community-college': 'Community College',
   'trade-school': 'Straight to Work', 'tech-bootcamp': 'Straight to Work',
   apprenticeship: 'Straight to Work', 'straight-to-work': 'Straight to Work',
@@ -1290,6 +1303,9 @@ Be encouraging but honest. Use simple language. No bullet points, just flowing s
 
       setAllocationConfirm(confirmMsg)
       const newState = await advanceWeek(character.id)
+      if (newState._tuitionNotice) {
+        setAllocationConfirm(prev => prev ? `${prev} | ${newState._tuitionNotice}` : newState._tuitionNotice)
+      }
       setAdvanceResult(newState)
       await loadDashboard()
     } catch (err) {
@@ -1516,7 +1532,18 @@ Be encouraging but honest. Use simple language. No bullet points, just flowing s
 
           <section className="dash-section">
             <h2 className="dash-section-title">Monthly Budget Breakdown</h2>
-            <BudgetBreakdown latest={latest} />
+            {character.life_path_id === 'uni-oncampus' && (
+              <p style={{ fontSize: '0.82rem', color: '#8b5cf6', marginBottom: '0.5rem', fontWeight: 600 }}>🎓 Room & board covered by student loans</p>
+            )}
+            <BudgetBreakdown latest={latest} isUni={character.life_path_id === 'uni-oncampus'} />
+            {character.life_path_id === 'uni-oncampus' && Number(latest.debt) > 0 && (
+              <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.75rem', background: '#fef3c7', borderRadius: 8, fontSize: '0.82rem' }}>
+                <span style={{ fontWeight: 600 }}>Student Loan Balance:</span> {money(latest.debt)}
+                {character.current_week < 28
+                  ? <span style={{ color: 'var(--gray-500)' }}> — payments deferred until week 28</span>
+                  : <span style={{ color: '#dc2626' }}> — payments active</span>}
+              </div>
+            )}
           </section>
         </>
       )}

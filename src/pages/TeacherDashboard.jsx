@@ -17,7 +17,7 @@ const PATH_CATEGORIES = {
   'retail-food': 'Work', trades: 'Work', 'office-admin': 'Work',
   military: 'Work', 'gig-freelance': 'Work', healthcare: 'Work',
   'cc-parttime': 'CC', 'cc-fulltime': 'CC',
-  'uni-oncampus': 'Uni', 'uni-offcampus': 'Uni',
+  'uni-oncampus': 'Uni',
 }
 const PATH_COLORS = { Work: '#3b82f6', CC: '#8b5cf6', Uni: '#f59e0b' }
 
@@ -710,18 +710,10 @@ const DEMO_LIFE_PATHS = [
   {
     id: 'uni-oncampus', emoji: '🎓', name: 'University On Campus',
     category: 'university',
-    shortDesc: 'Dorms, meal plan, campus life',
-    fullDesc: 'Live on campus at a four-year university. Between tuition, room and board, and a meal plan, costs are high — but so are the connections and opportunities.',
+    shortDesc: 'Tuition, room & board, and meal plan covered by student loans. Personal expenses only.',
+    fullDesc: 'Attend a 4-year Texas public university living on campus. Tuition, room, and meal plan are covered by student loans. Focus on your studies while managing personal expenses.',
     jobs: 'Work-study, campus dining, RA, library assistant',
-    incomeRange: [800, 1200], debtRange: [8000, 14000], savingsRange: [50, 300],
-  },
-  {
-    id: 'uni-offcampus', emoji: '🏠', name: 'University Off Campus',
-    category: 'university',
-    shortDesc: 'Apartment, more freedom, more bills',
-    fullDesc: 'Attend university but live off campus. You traded the dorm for an apartment — more independence, but also rent, groceries, and utility bills.',
-    jobs: 'Part-time work, internships, freelance',
-    incomeRange: [800, 1200], debtRange: [8000, 14000], savingsRange: [50, 400],
+    incomeRange: [400, 600], debtRange: [10000, 10000], savingsRange: [150, 250],
   },
 ]
 
@@ -778,7 +770,6 @@ const DEMO_PATH_STORIES = {
   'cc-parttime': "You're in community college part-time while working. Balancing school and a job is hard, but you're keeping debt low.",
   'cc-fulltime': "You're tackling community college while working full-time. Exhausting, but you're building toward something.",
   'uni-oncampus': "You're living on campus at a four-year university. The costs are steep, but the experience is worth it.",
-  'uni-offcampus': "You're at university but living off campus to save money. More independence, more bills.",
 }
 
 const DEMO_LOC_STORIES = {
