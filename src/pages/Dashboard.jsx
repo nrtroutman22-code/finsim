@@ -981,6 +981,8 @@ export default function Dashboard() {
 
   const [advancing, setAdvancing] = useState(false)
   const [advanceResult, setAdvanceResult] = useState(null)
+  const [showAllocation, setShowAllocation] = useState(false)
+  const [allocationConfirm, setAllocationConfirm] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -1241,13 +1243,52 @@ Be encouraging but honest. Use simple language. No bullet points, just flowing s
     }
   }
 
-  async function handleAdvanceWeek() {
-    setAdvancing(true)
+  function handleAdvanceClick() {
     setAdvanceResult(null)
+    setAllocationConfirm(null)
+    setShowAllocation(true)
+  }
+
+  async function handleAllocation(choice) {
+    setShowAllocation(false)
+    setAdvancing(true)
     setAiFeedback(null)
     setNewsHeadline(null)
     setNewsExplainer(null)
+
+    const income = Number(latest.monthly_income) || 0
+    const expenses = Number(latest.monthly_expenses) || 0
+    const residual = income - expenses
+
     try {
+      let confirmMsg = null
+      if (residual > 0) {
+        let savingsAdd = 0, debtReduce = 0, cashAdd = 0
+        switch (choice) {
+          case 'savings': savingsAdd = residual; confirmMsg = `${money(residual)} added to savings`; break
+          case 'debt': debtReduce = residual; confirmMsg = `${money(residual)} put toward debt`; break
+          case 'invest': savingsAdd = Math.round(residual * 0.5); cashAdd = 0; confirmMsg = `${money(Math.round(residual * 0.5))} invested, ${money(Math.round(residual * 0.5))} to savings`; break
+          case 'split': savingsAdd = Math.round(residual * 0.5); cashAdd = Math.round(residual * 0.5); confirmMsg = `${money(Math.round(residual * 0.5))} to savings, ${money(Math.round(residual * 0.5))} kept as cash`; break
+          case 'cash': cashAdd = residual; confirmMsg = `${money(residual)} kept as cash buffer`; break
+        }
+
+        const newCash = Number(latest.cash) + cashAdd
+        const newSavings = Number(latest.savings) + savingsAdd
+        const newDebt = Math.max(0, Number(latest.debt) - debtReduce)
+        const newNetWorth = newCash + newSavings - newDebt
+
+        await supabase.from('financial_states')
+          .update({ cash: Math.round(newCash), savings: Math.round(newSavings), debt: Math.round(newDebt), net_worth: Math.round(newNetWorth) })
+          .eq('id', latest.id)
+
+        await supabase.from('student_decisions').insert({
+          character_id: character.id,
+          week: character.current_week + 1,
+          decision_type: 'allocation',
+        })
+      }
+
+      setAllocationConfirm(confirmMsg)
       const newState = await advanceWeek(character.id)
       setAdvanceResult(newState)
       await loadDashboard()
@@ -1376,6 +1417,57 @@ Be encouraging but honest. Use simple language. No bullet points, just flowing s
 
           <AiFeedbackCard feedback={aiFeedback} loading={aiFeedbackLoading} />
 
+          {showAllocation && (() => {
+            const income = Number(latest.monthly_income) || 0
+            const expenses = Number(latest.monthly_expenses) || 0
+            const residual = income - expenses
+            const hasDebt = Number(latest.debt) > 0
+            const investUnlocked = unlockedCategories.includes('investing')
+
+            if (residual <= 0) {
+              return (
+                <section className="dash-section alloc-section">
+                  <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚠️</div>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.5rem' }}>You're spending more than you earn!</h3>
+                    <p style={{ fontSize: '0.88rem', color: 'var(--gray-500)', maxWidth: 380, margin: '0 auto 1rem' }}>
+                      You spent <strong>{money(Math.abs(residual))}</strong> more than you made this month. This will come out of your savings or increase your debt.
+                    </p>
+                    <button className="btn btn-primary" style={{ width: 'auto', padding: '0.6rem 1.5rem' }} onClick={() => handleAllocation('none')} type="button">
+                      Continue
+                    </button>
+                  </div>
+                </section>
+              )
+            }
+
+            const options = [
+              { key: 'savings', icon: '💰', label: 'Put it all in savings', desc: `${money(residual)} → savings` },
+              hasDebt && { key: 'debt', icon: '💳', label: 'Put it all toward debt', desc: `${money(residual)} → pay down debt` },
+              investUnlocked && { key: 'invest', icon: '📈', label: 'Invest a portion (50%)', desc: `${money(Math.round(residual * 0.5))} invested, ${money(Math.round(residual * 0.5))} → savings` },
+              { key: 'split', icon: '⚖️', label: 'Split between savings and spending', desc: `${money(Math.round(residual * 0.5))} → savings, ${money(Math.round(residual * 0.5))} kept as cash` },
+              { key: 'cash', icon: '🏦', label: 'Keep it as cash buffer', desc: `${money(residual)} stays as cash` },
+            ].filter(Boolean)
+
+            return (
+              <section className="dash-section alloc-section">
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.25rem' }}>You have {money(residual)} left over this month</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--gray-500)', marginBottom: '1rem' }}>What do you want to do with it?</p>
+                <div className="alloc-options">
+                  {options.map(opt => (
+                    <button key={opt.key} className="alloc-card" onClick={() => handleAllocation(opt.key)} type="button">
+                      <span className="alloc-icon">{opt.icon}</span>
+                      <div>
+                        <div className="alloc-label">{opt.label}</div>
+                        <div className="alloc-desc">{opt.desc}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )
+          })()}
+
           <section className="dash-section advance-section">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
               <div>
@@ -1383,20 +1475,26 @@ Be encouraging but honest. Use simple language. No bullet points, just flowing s
                   {character.current_week >= 36 ? 'Simulation complete!'
                     : weekLocked ? '🔒 Waiting for teacher'
                     : advancing ? 'Advancing to next week...'
+                    : showAllocation ? 'Choose what to do with your leftover money above'
                     : pendingActions ? 'Complete your decisions to advance'
                     : 'Ready to advance'}
                 </p>
                 {weekLocked && character.current_week < 36 && (
                   <p style={{ fontSize: '0.8rem', color: 'var(--gray-400)', marginTop: '0.15rem' }}>Your teacher hasn't unlocked the next week yet.</p>
                 )}
-                {!weekLocked && pendingActions && (
+                {!weekLocked && pendingActions && !showAllocation && (
                   <p style={{ fontSize: '0.8rem', color: 'var(--gray-400)', marginTop: '0.15rem' }}>Make all decisions above before moving on.</p>
                 )}
               </div>
-              <button className="btn btn-primary" style={{ width: 'auto', padding: '0.6rem 1.5rem' }} onClick={handleAdvanceWeek} disabled={!canAdvance || advancing} type="button">
+              <button className="btn btn-primary" style={{ width: 'auto', padding: '0.6rem 1.5rem' }} onClick={handleAdvanceClick} disabled={!canAdvance || advancing || showAllocation} type="button">
                 {advancing ? 'Processing...' : character.current_week >= 36 ? 'Finished' : weekLocked ? 'Locked' : 'Advance to Next Week'}
               </button>
             </div>
+            {allocationConfirm && (
+              <div className="advance-summary" style={{ color: '#16a34a' }}>
+                <span>✓ {allocationConfirm}</span>
+              </div>
+            )}
             {advanceResult && (
               <div className="advance-summary">
                 <span>Week {advanceResult.week} results: </span>
@@ -1446,12 +1544,6 @@ Be encouraging but honest. Use simple language. No bullet points, just flowing s
       {/* ════════════════════════════════════════════════ */}
       {tab === 'finances' && (
         <>
-          <section className="dash-section">
-            <h2 className="dash-section-title">Monthly Budget Breakdown</h2>
-            <p style={{ fontSize: '0.8rem', color: 'var(--gray-400)', marginBottom: '0.5rem' }}>Your actual spending vs recommended percentages</p>
-            <BudgetBreakdown latest={latest} showRecommended />
-          </section>
-
           <section className="dash-section">
             <h2 className="dash-section-title">Credit Score</h2>
             <CreditScoreDisplay score={latest.credit_score} showBreakdown history={history} />
