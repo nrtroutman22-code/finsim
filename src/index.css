@@ -771,6 +771,401 @@ body {
   margin-top: 0.3rem;
 }
 
+/* ── Tab Bar ────────────────────────────────────────── */
+
+.dash-tab-bar {
+  display: flex;
+  gap: 0;
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.dash-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.75rem 0.5rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gray-400);
+  border-bottom: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.dash-tab:hover { color: var(--gray-700); }
+.dash-tab.active {
+  color: var(--green-dark);
+  border-bottom-color: var(--green);
+  font-weight: 600;
+}
+.dash-tab-icon { font-size: 1rem; }
+
+/* ── News Tie-In Card ───────────────────────────────── */
+
+.news-card {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+.news-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+.news-card-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0369a1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.news-card-headline {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  line-height: 1.4;
+  margin-bottom: 0.3rem;
+}
+.news-card-explainer {
+  font-size: 0.82rem;
+  color: #0c4a6e;
+  line-height: 1.5;
+}
+
+/* ── AI Feedback Card ───────────────────────────────── */
+
+.ai-feedback-card {
+  background: #fefce8;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+.ai-feedback-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+}
+.ai-feedback-text {
+  font-size: 0.88rem;
+  color: var(--gray-700);
+  line-height: 1.6;
+}
+
+/* ── Journey Table ──────────────────────────────────── */
+
+.journey-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.journey-table th {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  font-weight: 600;
+  color: var(--gray-500);
+  border-bottom: 2px solid var(--gray-200);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.journey-table td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--gray-100);
+  white-space: nowrap;
+}
+.journey-table tr.week-up td:first-child { border-left: 3px solid #16a34a; }
+.journey-table tr.week-down td:first-child { border-left: 3px solid #dc2626; }
+.journey-table tr.week-zero td { color: var(--gray-400); }
+.nw-arrow {
+  display: inline-block;
+  font-size: 0.75rem;
+  margin-left: 0.3rem;
+  font-weight: 600;
+}
+.nw-arrow.up { color: #16a34a; }
+.nw-arrow.down { color: #dc2626; }
+.decision-chip {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+  background: var(--gray-100);
+  font-size: 0.78rem;
+  color: var(--gray-600);
+}
+.decision-chip.life-event {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* ── Consequence Tracker ────────────────────────────── */
+
+.consequence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.consequence-card {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  border-left: 4px solid;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.consequence-card.warning {
+  background: #fffbeb;
+  border-left-color: #f59e0b;
+  color: var(--gray-700);
+}
+.consequence-card.danger {
+  background: #fef2f2;
+  border-left-color: #dc2626;
+  color: var(--gray-700);
+}
+.consequence-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+
+/* ── Credit Factor Breakdown ────────────────────────── */
+
+.credit-factor {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.credit-factor-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.credit-factor-dot.positive { background: #16a34a; }
+.credit-factor-dot.neutral { background: #eab308; }
+.credit-factor-dot.negative { background: #dc2626; }
+
+/* ── Debt Tracker ───────────────────────────────────── */
+
+.debt-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.debt-stat {
+  text-align: center;
+}
+.debt-stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  margin-bottom: 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+.debt-stat-value {
+  font-size: 1rem;
+  font-weight: 700;
+}
+.debt-calc {
+  background: var(--gray-50);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+}
+.debt-calc-result {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--gray-700);
+  line-height: 1.6;
+}
+
+/* ── Investment Portfolio ───────────────────────────── */
+
+.invest-locked {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+.invest-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+.invest-card {
+  text-align: center;
+  padding: 1rem 0.5rem;
+  background: var(--gray-50);
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+}
+.invest-alloc-form {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+.invest-alloc-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ── Compound Interest Calculator ───────────────────── */
+
+.ci-inputs {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.ci-input-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gray-500);
+  margin-bottom: 0.25rem;
+}
+.ci-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  color: var(--gray-500);
+}
+.ci-input-row .input {
+  width: 100px;
+}
+.ci-results {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.ci-result-card {
+  text-align: center;
+  padding: 1rem 0.5rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+}
+.ci-result-card.green { background: #f0fdf4; border-color: #bbf7d0; }
+.ci-result-card.blue { background: #eff6ff; border-color: #bfdbfe; }
+.ci-result-card.highlight { background: #fef2f2; border-color: #fecaca; }
+.ci-result-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--gray-500);
+  margin-bottom: 0.2rem;
+}
+.ci-result-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+.ci-result-sub {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  margin-top: 0.1rem;
+}
+
+/* ── Savings Goals ──────────────────────────────────── */
+
+.goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.goal-card {
+  padding: 0.75rem 1rem;
+  background: var(--gray-50);
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+}
+.goal-card.reached {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+.goal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+.goal-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gray-400);
+  font-size: 1.1rem;
+  padding: 0 0.25rem;
+}
+.goal-remove:hover { color: #dc2626; }
+.goal-bar-track {
+  height: 8px;
+  background: var(--gray-200);
+  border-radius: 4px;
+  margin-bottom: 0.3rem;
+}
+.goal-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+.goal-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--gray-500);
+}
+.goal-add-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ── Responsive: Tab and Finance sections ───────────── */
+
+@media (max-width: 600px) {
+  .dash-tab-bar { border-radius: 0; }
+  .dash-tab { font-size: 0.78rem; padding: 0.6rem 0.25rem; }
+  .dash-tab-label { display: none; }
+  .dash-tab-icon { font-size: 1.2rem; }
+  .debt-summary { grid-template-columns: repeat(2, 1fr); }
+  .invest-grid { grid-template-columns: 1fr; }
+  .ci-results { grid-template-columns: 1fr; }
+  .invest-alloc-form { flex-direction: column; }
+  .journey-table { font-size: 0.78rem; }
+  .journey-table th, .journey-table td { padding: 0.4rem; }
+}
+
 /* ── Teacher Dashboard ──────────────────────────────── */
 
 .td-layout {
