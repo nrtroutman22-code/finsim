@@ -221,8 +221,9 @@ function generateFinancials(path, location) {
   const monthlyIncome = rand(path.incomeRange[0], path.incomeRange[1])
   const startingSavings = rand(path.savingsRange[0], path.savingsRange[1])
   const startingDebt = rand(path.debtRange[0], path.debtRange[1])
-  const monthlyRent = rand(location.rentRange[0], location.rentRange[1])
-  const otherExpenses = rand(400, 600)
+  const isUni = path.id === 'uni-oncampus'
+  const monthlyRent = isUni ? 0 : rand(location.rentRange[0], location.rentRange[1])
+  const otherExpenses = isUni ? rand(200, 350) : rand(400, 600)
   return {
     monthlyIncome,
     startingSavings,
@@ -557,16 +558,26 @@ export default function CreateCharacter() {
                 <span className="summary-label">Monthly Income</span>
                 <span className="summary-value">{money(financials.monthlyIncome)}/mo</span>
               </div>
+              {selectedPath.id === 'uni-oncampus' ? (
+                <div style={{ padding: '0.5rem 0.75rem', background: '#f5f3ff', borderRadius: 8, margin: '0.4rem 0', fontSize: '0.85rem', color: '#7c3aed' }}>
+                  🎓 Room & board and meal plan covered by student loans
+                </div>
+              ) : (
+                <div className="summary-row">
+                  <span className="summary-label">{selectedLocation.rentLabel}</span>
+                  <span className="summary-value">{money(financials.monthlyRent)}/mo</span>
+                </div>
+              )}
               <div className="summary-row">
-                <span className="summary-label">{selectedLocation.rentLabel}</span>
-                <span className="summary-value">{money(financials.monthlyRent)}/mo</span>
+                <span className="summary-label">Monthly Expenses</span>
+                <span className="summary-value">{money(financials.monthlyExpenses)}/mo</span>
               </div>
               <div className="summary-row">
                 <span className="summary-label">Starting Savings</span>
                 <span className="summary-value">{money(financials.startingSavings)}</span>
               </div>
               <div className="summary-row">
-                <span className="summary-label">Starting Debt</span>
+                <span className="summary-label">{selectedPath.id === 'uni-oncampus' ? 'Student Loans' : 'Starting Debt'}</span>
                 <span className="summary-value" style={{ color: financials.startingDebt > 0 ? '#dc2626' : 'inherit' }}>
                   {financials.startingDebt > 0 ? money(financials.startingDebt) : 'None'}
                 </span>
