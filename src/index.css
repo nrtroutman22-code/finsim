@@ -1151,6 +1151,64 @@ body {
   flex-wrap: wrap;
 }
 
+/* ── My Class Tab ───────────────────────────────────── */
+
+.class-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+.class-compare-card {
+  background: var(--gray-50);
+  border-radius: 10px;
+  padding: 1rem;
+  border-left: 4px solid var(--gray-300);
+}
+.class-compare-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gray-500);
+  margin-bottom: 0.25rem;
+}
+.class-compare-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  margin-bottom: 0.35rem;
+}
+.class-compare-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  margin-bottom: 0.35rem;
+}
+.class-compare-desc {
+  font-size: 0.78rem;
+  color: var(--gray-600);
+  margin-bottom: 0.15rem;
+}
+.class-compare-avg {
+  font-size: 0.72rem;
+  color: var(--gray-400);
+}
+.path-compare-note {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--gray-700);
+  margin-top: 0.5rem;
+}
+.path-compare-disclaimer {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
 /* ── Responsive: Tab and Finance sections ───────────── */
 
 @media (max-width: 600px) {
@@ -1164,6 +1222,7 @@ body {
   .invest-alloc-form { flex-direction: column; }
   .journey-table { font-size: 0.78rem; }
   .journey-table th, .journey-table td { padding: 0.4rem; }
+  .class-compare-grid { grid-template-columns: 1fr; }
 }
 
 /* ── Teacher Dashboard ──────────────────────────────── */

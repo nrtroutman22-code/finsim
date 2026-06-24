@@ -746,6 +746,228 @@ function SavingsGoals({ savings, characterId }) {
   )
 }
 
+// ─── My Class Tab ──────────────────────────────────────
+
+const PATH_TO_GROUP = {
+  'retail-food': 'Straight to Work', trades: 'Straight to Work', 'office-admin': 'Straight to Work',
+  military: 'Straight to Work', 'gig-freelance': 'Straight to Work', healthcare: 'Straight to Work',
+  'cc-parttime': 'Community College', 'cc-fulltime': 'Community College',
+  'uni-oncampus': 'University', 'uni-offcampus': 'University',
+  'four-year-college': 'University', 'community-college': 'Community College',
+  'trade-school': 'Straight to Work', 'tech-bootcamp': 'Straight to Work',
+  apprenticeship: 'Straight to Work', 'straight-to-work': 'Straight to Work',
+  entrepreneur: 'Straight to Work', 'gap-year': 'Straight to Work',
+  'family-business': 'Straight to Work',
+}
+const PATH_GROUP_COLORS = { 'Straight to Work': '#3b82f6', 'Community College': '#8b5cf6', University: '#f59e0b' }
+const PATH_GROUP_ORDER = ['Straight to Work', 'Community College', 'University']
+
+function MyClassTab({ sectionId, character, latest }) {
+  const [peers, setPeers] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!sectionId || !character) return
+    async function load() {
+      setLoading(true)
+      const { data: enrollments } = await supabase
+        .from('enrollments')
+        .select('id')
+        .eq('section_id', sectionId)
+        .eq('status', 'approved')
+      if (!enrollments || enrollments.length === 0) { setPeers([]); setLoading(false); return }
+
+      const results = await Promise.all(
+        enrollments.map(async (e) => {
+          const { data: char } = await supabase
+            .from('characters')
+            .select('id, life_path_id')
+            .eq('enrollment_id', e.id)
+            .single()
+          if (!char) return null
+          const { data: fs } = await supabase
+            .from('financial_states')
+            .select('net_worth, cash, savings, debt, credit_score, monthly_income, monthly_expenses')
+            .eq('character_id', char.id)
+            .order('week', { ascending: false })
+            .limit(1)
+            .single()
+          if (!fs) return null
+          const income = Number(fs.monthly_income) || 1
+          const expenses = Number(fs.monthly_expenses) || 0
+          return {
+            characterId: char.id,
+            lifePathId: char.life_path_id,
+            netWorth: Number(fs.net_worth) || 0,
+            savings: Number(fs.savings) || 0,
+            debt: Number(fs.debt) || 0,
+            creditScore: fs.credit_score || 650,
+            savingsRate: Math.max(0, Math.round(((income - expenses) / income) * 100)),
+          }
+        })
+      )
+      setPeers(results.filter(Boolean))
+      setLoading(false)
+    }
+    load()
+  }, [sectionId, character])
+
+  if (loading) {
+    return (
+      <section className="dash-section" style={{ padding: '2rem', textAlign: 'center' }}>
+        <div className="skeleton-pulse" style={{ width: 200, height: 16, borderRadius: 4, background: 'var(--gray-200)', margin: '0 auto 1rem' }} />
+        <div className="skeleton-pulse" style={{ width: '100%', height: 120, borderRadius: 8, background: 'var(--gray-100)' }} />
+      </section>
+    )
+  }
+
+  if (!peers || peers.length < 3) {
+    return (
+      <section className="dash-section" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+        <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👥</div>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.5rem' }}>Not Enough Data Yet</h2>
+        <p style={{ color: 'var(--gray-400)', fontSize: '0.9rem', maxWidth: 400, margin: '0 auto' }}>
+          Class comparison needs at least 3 students in your section. Ask your classmates to join!
+        </p>
+      </section>
+    )
+  }
+
+  const me = peers.find(p => p.characterId === character.id)
+  if (!me) return null
+
+  const myIncome = Number(latest?.monthly_income) || 1
+  const myExpenses = Number(latest?.monthly_expenses) || 0
+  const mySavingsRate = Math.max(0, Math.round(((myIncome - myExpenses) / myIncome) * 100))
+
+  // Rankings (percentile = % of class you beat)
+  function percentile(arr, myVal) {
+    const below = arr.filter(v => v < myVal).length
+    return Math.round((below / arr.length) * 100)
+  }
+
+  const nwPct = percentile(peers.map(p => p.netWorth), me.netWorth)
+  const creditPct = percentile(peers.map(p => p.creditScore), me.creditScore)
+  const debtPct = percentile(peers.map(p => p.debt), me.debt * -1) // invert: less debt = better
+  const avgSavingsRate = Math.round(peers.reduce((s, p) => s + p.savingsRate, 0) / peers.length)
+
+  const avgNW = Math.round(peers.reduce((s, p) => s + p.netWorth, 0) / peers.length)
+  const avgCredit = Math.round(peers.reduce((s, p) => s + p.creditScore, 0) / peers.length)
+  const avgDebt = Math.round(peers.reduce((s, p) => s + p.debt, 0) / peers.length)
+
+  function tier(pct) {
+    if (pct >= 60) return { label: 'Above average', color: '#16a34a', bg: '#f0fdf4' }
+    if (pct >= 40) return { label: 'Average', color: '#eab308', bg: '#fefce8' }
+    return { label: 'Below average', color: '#dc2626', bg: '#fef2f2' }
+  }
+
+  const comparisons = [
+    { title: 'Net Worth', value: money(me.netWorth), desc: nwPct >= 50 ? `Top ${100 - nwPct}% of your class` : `Ahead of ${nwPct}% of classmates`, avg: `Class avg: ${money(avgNW)}`, ...tier(nwPct) },
+    { title: 'Savings Rate', value: `${mySavingsRate}%`, desc: mySavingsRate >= avgSavingsRate ? `Above the class average of ${avgSavingsRate}%` : `Below the class average of ${avgSavingsRate}%`, avg: `Class avg: ${avgSavingsRate}%`, ...tier(mySavingsRate >= avgSavingsRate ? 65 : mySavingsRate >= avgSavingsRate - 5 ? 50 : 30) },
+    { title: 'Credit Score', value: me.creditScore, desc: creditPct >= 50 ? `Higher than ${creditPct}% of classmates` : `Ahead of ${creditPct}% of classmates`, avg: `Class avg: ${avgCredit}`, ...tier(creditPct) },
+    { title: 'Debt Level', value: me.debt > 0 ? money(me.debt) : 'None', desc: me.debt <= avgDebt ? `Less debt than ${100 - percentile(peers.map(p => p.debt), me.debt)}% of your class` : `More debt than average`, avg: `Class avg: ${money(avgDebt)}`, ...tier(me.debt <= avgDebt ? 65 : 30) },
+  ]
+
+  // Life path comparison
+  const groups = {}
+  peers.forEach(p => {
+    const g = PATH_TO_GROUP[p.lifePathId] || 'Straight to Work'
+    if (!groups[g]) groups[g] = { total: 0, count: 0 }
+    groups[g].total += p.netWorth
+    groups[g].count++
+  })
+  const myGroup = PATH_TO_GROUP[character.life_path_id] || 'Straight to Work'
+  const bars = PATH_GROUP_ORDER.map(name => ({
+    name,
+    avg: groups[name] ? Math.round(groups[name].total / groups[name].count) : 0,
+    count: groups[name]?.count || 0,
+    isMine: name === myGroup,
+  })).filter(b => b.count > 0)
+
+  const barMax = Math.max(...bars.map(b => Math.abs(b.avg)), 1)
+  const hasNegative = bars.some(b => b.avg < 0)
+  const chartW = 480, chartH = bars.length * 60 + 30
+  const PL = 140, PR = 70, barH = 28
+  const plotW = chartW - PL - PR
+  const valRange = hasNegative ? barMax * 2 : barMax
+  const zeroX = hasNegative ? PL + plotW / 2 : PL
+  function barX(val) {
+    if (hasNegative) return PL + ((val + barMax) / valRange) * plotW
+    return PL + (val / valRange) * plotW
+  }
+
+  return (
+    <>
+      <section className="dash-section">
+        <h2 className="dash-section-title">Where Do I Stand?</h2>
+        <p style={{ fontSize: '0.82rem', color: 'var(--gray-400)', marginBottom: '1rem' }}>
+          Anonymous comparison with {peers.length} classmates in your section
+        </p>
+        <div className="class-compare-grid">
+          {comparisons.map(c => (
+            <div key={c.title} className="class-compare-card" style={{ borderLeftColor: c.color }}>
+              <div className="class-compare-title">{c.title}</div>
+              <div className="class-compare-value">{c.value}</div>
+              <div className="class-compare-tag" style={{ color: c.color, background: c.bg }}>{c.label}</div>
+              <div className="class-compare-desc">{c.desc}</div>
+              <div className="class-compare-avg">{c.avg}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="dash-section">
+        <h2 className="dash-section-title">Life Path Comparison</h2>
+        <p style={{ fontSize: '0.82rem', color: 'var(--gray-400)', marginBottom: '0.75rem' }}>
+          Average net worth by life path — your path is highlighted
+        </p>
+        <svg viewBox={`0 0 ${chartW} ${chartH}`} style={{ width: '100%', height: 'auto' }}>
+          {hasNegative && (
+            <line x1={zeroX} x2={zeroX} y1={10} y2={chartH - 20} stroke="var(--gray-300)" strokeWidth="1" strokeDasharray="4 3" />
+          )}
+          {bars.map((b, i) => {
+            const y = 15 + i * 60
+            const w = Math.abs(barX(b.avg) - zeroX)
+            const bx = b.avg >= 0 ? zeroX : zeroX - w
+            const color = b.isMine ? '#16a34a' : PATH_GROUP_COLORS[b.name] || '#9ca3af'
+            return (
+              <g key={b.name}>
+                <text x={PL - 8} y={y + barH / 2 + 4} textAnchor="end" fontSize="12" fill={b.isMine ? '#16a34a' : 'var(--gray-700)'} fontWeight={b.isMine ? '700' : '500'}>
+                  {b.name}
+                </text>
+                <rect x={bx} y={y} width={Math.max(w, 2)} height={barH} rx="4" fill={color} opacity={b.isMine ? 1 : 0.6} />
+                {b.isMine && (
+                  <rect x={bx - 1} y={y - 1} width={Math.max(w, 2) + 2} height={barH + 2} rx="5" fill="none" stroke="#16a34a" strokeWidth="2" />
+                )}
+                <text x={bx + Math.max(w, 2) + 6} y={y + barH / 2 + 4} fontSize="11" fill="var(--gray-600)" fontWeight="600">
+                  {money(b.avg)}
+                </text>
+                <text x={PL - 8} y={y + barH / 2 + 18} textAnchor="end" fontSize="9" fill="var(--gray-400)">
+                  {b.count} student{b.count !== 1 ? 's' : ''}
+                </text>
+              </g>
+            )
+          })}
+        </svg>
+        {me && (
+          <div className="path-compare-note">
+            <span style={{ fontWeight: 600 }}>Your net worth: {money(me.netWorth)}</span>
+            {groups[myGroup] && (
+              <span style={{ color: 'var(--gray-500)' }}>
+                {' '}vs path avg: {money(Math.round(groups[myGroup].total / groups[myGroup].count))}
+                {me.netWorth >= Math.round(groups[myGroup].total / groups[myGroup].count) ? ' 🟢' : ' 🔴'}
+              </span>
+            )}
+          </div>
+        )}
+        <p className="path-compare-disclaimer">
+          Results vary based on individual decisions — your choices matter more than your path!
+        </p>
+      </section>
+    </>
+  )
+}
+
 // ─── Main Dashboard ────────────────────────────────────
 
 export default function Dashboard() {
@@ -1329,13 +1551,7 @@ Be encouraging but honest. Use simple language. No bullet points, just flowing s
       {/* TAB 4 — MY CLASS                               */}
       {/* ════════════════════════════════════════════════ */}
       {tab === 'class' && (
-        <section className="dash-section" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>👥</div>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.5rem' }}>Coming Soon</h2>
-          <p style={{ color: 'var(--gray-400)', fontSize: '0.9rem', maxWidth: 400, margin: '0 auto' }}>
-            Class comparison features are on the way. You'll be able to see how your financial decisions stack up against your classmates — anonymously, of course.
-          </p>
-        </section>
+        <MyClassTab sectionId={sectionId} character={character} latest={latest} />
       )}
     </div>
   )
