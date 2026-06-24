@@ -61,6 +61,13 @@ const TABS = [
   { id: 'class', label: 'My Class', icon: '👥' },
 ]
 
+const FALLBACK_NEWS = {
+  budgeting: { headline: 'Americans who follow the 50/30/20 budget rule save 3x more than those who don\'t', explainer: 'A simple budget framework can make a huge difference — even small habits now compound over a lifetime.' },
+  debt: { headline: 'Average American credit card debt hits $6,500 in 2026 as interest rates stay elevated', explainer: 'Carrying a balance at 20%+ APR means you could end up paying back nearly double what you borrowed.' },
+  savings: { headline: 'Survey: 56% of Americans can\'t cover a $1,000 emergency expense without borrowing', explainer: 'An emergency fund isn\'t optional — one unexpected bill without savings can spiral into months of debt.' },
+  investing: { headline: 'A 25-year-old who invests $100/month could have over $300,000 by retirement', explainer: 'Starting early is the single biggest advantage in investing — time in the market beats timing the market.' },
+}
+
 // ─── AI Helper ─────────────────────────────────────────
 
 async function callAI(prompt) {
@@ -870,28 +877,40 @@ export default function Dashboard() {
         }
 
         // Load news for this week's category
+        const category = weekRow.category || 'budgeting'
         const cacheKey = `finsim_news_w${nextWeek}`
         const cached = localStorage.getItem(cacheKey)
         if (cached) {
-          const parsed = JSON.parse(cached)
-          setNewsHeadline(parsed.headline)
-          setNewsExplainer(parsed.explainer)
-        } else if (weekRow.category) {
+          try {
+            const parsed = JSON.parse(cached)
+            setNewsHeadline(parsed.headline)
+            setNewsExplainer(parsed.explainer)
+          } catch {
+            localStorage.removeItem(cacheKey)
+          }
+        }
+        if (!cached) {
           callAI(
-            `Generate a realistic 2026 financial news headline about the topic "${weekRow.category}". Also write a one-sentence "Why this matters to you" explanation for a high school student managing their own finances for the first time. Return ONLY valid JSON: {"headline":"...","explainer":"..."}`
+            `Generate a realistic 2026 financial news headline about the topic "${category}". Also write a one-sentence "Why this matters to you" explanation for a high school student managing their own finances for the first time. Return ONLY valid JSON: {"headline":"...","explainer":"..."}`
           ).then(text => {
-            if (!text) return
-            try {
-              const parsed = JSON.parse(text)
-              setNewsHeadline(parsed.headline)
-              setNewsExplainer(parsed.explainer)
-              localStorage.setItem(cacheKey, JSON.stringify(parsed))
-            } catch {}
+            if (!text) throw new Error('empty')
+            const parsed = JSON.parse(text)
+            setNewsHeadline(parsed.headline)
+            setNewsExplainer(parsed.explainer)
+            localStorage.setItem(cacheKey, JSON.stringify(parsed))
+          }).catch(() => {
+            setNewsHeadline(FALLBACK_NEWS[category]?.headline || FALLBACK_NEWS.budgeting.headline)
+            setNewsExplainer(FALLBACK_NEWS[category]?.explainer || FALLBACK_NEWS.budgeting.explainer)
           })
         }
       } else {
         setWeekData(null)
         setDecisionMade(true)
+        // No week data — show a fallback news card
+        const fallbackCats = ['budgeting', 'debt', 'savings', 'investing']
+        const pick = fallbackCats[char.current_week % fallbackCats.length]
+        setNewsHeadline(FALLBACK_NEWS[pick].headline)
+        setNewsExplainer(FALLBACK_NEWS[pick].explainer)
       }
 
       await triggerRandomLifeEvent(char.id, enrollment.section_id)
@@ -1135,11 +1154,10 @@ Be encouraging but honest. Use simple language. No bullet points, just flowing s
             </div>
           )}
 
+          <NewsCard headline={newsHeadline} explainer={newsExplainer} />
+
           {weekData && !decisionMade && lifeEventMade && (
-            <>
-              <NewsCard headline={newsHeadline} explainer={newsExplainer} />
-              <DecisionCard week={weekData} options={weekOptions} onChoose={handleDecision} choosing={choosing} />
-            </>
+            <DecisionCard week={weekData} options={weekOptions} onChoose={handleDecision} choosing={choosing} />
           )}
 
           {!weekData && decisionMade && lifeEventMade && character.current_week < 36 && !weekLocked && (
