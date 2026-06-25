@@ -67,13 +67,21 @@ export async function advanceWeek(characterId) {
   cash += monthlyIncome
 
   // ── Automatic expenses ──
-  const rentRange = RENT_RANGES[locationId] || [700, 900]
-  const rent = isUni ? 0 : rand(rentRange[0], rentRange[1])
-  const food = isUni ? 0 : rand(Math.round(200 * mod), Math.round(400 * mod))
-  const transport = rand(Math.round(100 * mod), Math.round(300 * mod))
-  const phoneUtil = rand(100, 200)
-
-  const totalExpenses = rent + food + transport + phoneUtil
+  let totalExpenses
+  if (isUni) {
+    // Uni students: rent & food covered by loans, only personal costs
+    const transport = rand(50, 120)
+    const phoneUtil = rand(80, 150)
+    const personal = rand(30, 80)
+    totalExpenses = transport + phoneUtil + personal
+  } else {
+    const rentRange = RENT_RANGES[locationId] || [700, 900]
+    const rent = rand(rentRange[0], rentRange[1])
+    const food = rand(Math.round(200 * mod), Math.round(400 * mod))
+    const transport = rand(Math.round(100 * mod), Math.round(300 * mod))
+    const phoneUtil = rand(100, 200)
+    totalExpenses = rent + food + transport + phoneUtil
+  }
 
   cash -= totalExpenses
 
