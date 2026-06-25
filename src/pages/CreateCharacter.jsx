@@ -132,22 +132,22 @@ const LOCATIONS = [
   {
     id: 'big-city', name: 'Big City',
     description: 'Lots of opportunities but high rent and expenses.',
-    rentLabel: 'Rent', rentRange: [1100, 1400],
+    rentLabel: 'Rent', rentRange: [1100, 1400], costMod: 1.3,
   },
   {
     id: 'mid-size-city', name: 'Mid-Size City',
     description: 'A good balance of jobs, amenities, and affordability.',
-    rentLabel: 'Rent', rentRange: [800, 1000],
+    rentLabel: 'Rent', rentRange: [800, 1000], costMod: 1.0,
   },
   {
     id: 'small-town', name: 'Small Town',
     description: 'Lower costs but fewer job options. Your money stretches further.',
-    rentLabel: 'Rent', rentRange: [550, 750],
+    rentLabel: 'Rent', rentRange: [550, 750], costMod: 0.85,
   },
   {
     id: 'living-at-home', name: 'Living at Home',
     description: 'Stay with family and contribute to household expenses while you save.',
-    rentLabel: 'Family contribution', rentRange: [200, 350],
+    rentLabel: 'Family contribution', rentRange: [200, 350], costMod: 0.8,
     onlyCategories: ['straight-to-work', 'community-college'],
   },
 ]
@@ -222,14 +222,24 @@ function generateFinancials(path, location) {
   const startingSavings = rand(path.savingsRange[0], path.savingsRange[1])
   const startingDebt = rand(path.debtRange[0], path.debtRange[1])
   const isUni = path.id === 'uni-oncampus'
-  const monthlyRent = isUni ? 0 : rand(location.rentRange[0], location.rentRange[1])
-  const otherExpenses = isUni ? rand(200, 350) : rand(400, 600)
+  const mod = location.costMod || 1.0
+
+  let monthlyRent, monthlyExpenses
+  if (isUni) {
+    monthlyRent = 0
+    monthlyExpenses = 270 // transport $100 + phone $120 + personal $50
+  } else {
+    monthlyRent = rand(location.rentRange[0], location.rentRange[1])
+    const food = Math.round(300 * mod)
+    monthlyExpenses = monthlyRent + food + 150 + 120 + 100 // rent + food + transport + phone + personal
+  }
+
   return {
     monthlyIncome,
     startingSavings,
     startingDebt,
     monthlyRent,
-    monthlyExpenses: monthlyRent + otherExpenses,
+    monthlyExpenses,
     netWorth: startingSavings - startingDebt,
     creditScore: 650,
   }

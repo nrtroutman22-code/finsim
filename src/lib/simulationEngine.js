@@ -46,8 +46,6 @@ export async function advanceWeek(characterId) {
   if (fErr) throw new Error('Could not load financial state: ' + fErr.message)
 
   const newWeek = current.week + 1
-  const mod = Number(character.locations?.cost_of_living_modifier) || 1.0
-  const locationId = character.location_id
   const isUni = character.life_path_id === 'uni-oncampus'
 
   let cash = Number(current.cash)
@@ -55,6 +53,7 @@ export async function advanceWeek(characterId) {
   let debt = Number(current.debt)
   let creditScore = current.credit_score
   const monthlyIncome = Number(current.monthly_income)
+  const fixedExpenses = Number(current.monthly_expenses) || 0
 
   // ── Semester tuition (uni-oncampus only) ──
   let tuitionNotice = null
@@ -66,24 +65,8 @@ export async function advanceWeek(characterId) {
   // ── Income ──
   cash += monthlyIncome
 
-  // ── Automatic expenses ──
-  let totalExpenses
-  if (isUni) {
-    // Uni students: rent & food covered by loans, only personal costs
-    const transport = rand(50, 120)
-    const phoneUtil = rand(80, 150)
-    const personal = rand(30, 80)
-    totalExpenses = transport + phoneUtil + personal
-  } else {
-    const rentRange = RENT_RANGES[locationId] || [700, 900]
-    const rent = rand(rentRange[0], rentRange[1])
-    const food = rand(Math.round(200 * mod), Math.round(400 * mod))
-    const transport = rand(Math.round(100 * mod), Math.round(300 * mod))
-    const phoneUtil = rand(100, 200)
-    totalExpenses = rent + food + transport + phoneUtil
-  }
-
-  cash -= totalExpenses
+  // ── Fixed expenses (set at character creation, changed only by decisions/life events) ──
+  cash -= fixedExpenses
 
   // ── Debt interest + minimum payment ──
   let debtPayment = 0
@@ -116,16 +99,17 @@ export async function advanceWeek(characterId) {
 
   // ── Net worth ──
   const netWorth = cash + savings - debt
-  const monthlyExpenses = totalExpenses + debtPayment
 
   // ── Insert new financial state ──
+  // Store fixed living expenses only (no debt payment) so they persist correctly.
+  // The dashboard displays fixedExpenses + debtPayment as total monthly outflow.
   const newState = {
     character_id: characterId,
     week: newWeek,
     net_worth: Math.round(netWorth),
     cash: Math.round(cash),
     monthly_income: monthlyIncome,
-    monthly_expenses: Math.round(monthlyExpenses),
+    monthly_expenses: fixedExpenses,
     savings: Math.round(savings),
     debt: Math.round(Math.max(0, debt)),
     credit_score: creditScore,
